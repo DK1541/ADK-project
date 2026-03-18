@@ -19,6 +19,7 @@
       --muted:     #6b7280;
       --danger:    #ef4444;
       --radius:    14px;
+      --sidebar:   240px;
     }
 
     body {
@@ -28,6 +29,7 @@
       height: 100dvh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     /* ── Header ── */
@@ -39,6 +41,7 @@
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
+      z-index: 10;
     }
 
     .logo {
@@ -47,6 +50,7 @@
       border-radius: 8px;
       display: grid; place-items: center;
       font-size: 16px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
     }
 
     header h1 { font-size: 16px; font-weight: 600; flex: 1; }
@@ -67,21 +71,134 @@
       background: transparent; color: var(--muted);
       transition: all .15s;
     }
+    .phase-tabs button.active { background: var(--accent); color: #fff; }
 
-    .phase-tabs button.active {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .new-chat-btn {
-      padding: 6px 14px;
+    .icon-btn {
+      width: 34px; height: 34px;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: transparent; color: var(--text);
-      font-size: 13px; cursor: pointer;
+      font-size: 16px; cursor: pointer;
+      display: grid; place-items: center;
       transition: background .15s;
+      flex-shrink: 0;
     }
-    .new-chat-btn:hover { background: var(--border); }
+    .icon-btn:hover { background: var(--border); }
+
+    /* ── Body: sidebar + chat ── */
+    .body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: width .2s, opacity .2s;
+      overflow: hidden;
+    }
+
+    #sidebar.collapsed { width: 0; opacity: 0; }
+
+    .sidebar-header {
+      padding: 12px 14px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .clear-all-btn {
+      font-size: 11px;
+      color: var(--muted);
+      background: none; border: none; cursor: pointer;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .clear-all-btn:hover { color: var(--danger); background: #2a1515; }
+
+    #history-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+
+    #history-list::-webkit-scrollbar { width: 3px; }
+    #history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .history-empty {
+      padding: 24px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .history-item {
+      padding: 9px 14px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: background .12s, border-color .12s;
+      position: relative;
+    }
+    .history-item:hover { background: var(--bg); }
+    .history-item.active {
+      background: var(--bg);
+      border-left-color: var(--accent);
+    }
+
+    .history-title {
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 20px;
+    }
+
+    .history-meta {
+      display: flex; gap: 6px; align-items: center;
+      margin-top: 3px;
+    }
+
+    .phase-badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: var(--border);
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .history-time {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .delete-btn {
+      position: absolute;
+      right: 8px; top: 50%;
+      transform: translateY(-50%);
+      width: 20px; height: 20px;
+      border-radius: 4px;
+      background: none; border: none;
+      color: var(--muted); cursor: pointer;
+      font-size: 14px;
+      display: none; place-items: center;
+    }
+    .history-item:hover .delete-btn { display: grid; }
+    .delete-btn:hover { color: var(--danger); background: #2a1515; }
 
     /* ── Phase description bar ── */
     #phase-desc {
@@ -91,6 +208,14 @@
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
+    }
+
+    /* ── Main column ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     /* ── Chat area ── */
@@ -105,7 +230,6 @@
     }
 
     #chat::-webkit-scrollbar { width: 4px; }
-    #chat::-webkit-scrollbar-track { background: transparent; }
     #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
     /* ── Messages ── */
@@ -144,44 +268,16 @@
       word-break: break-word;
     }
 
-    .msg.user  .bubble {
-      background: var(--user-bg);
-      color: #fff;
-      border-bottom-right-radius: 4px;
-    }
-
-    .msg.agent .bubble {
-      background: var(--agent-bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-bottom-left-radius: 4px;
-    }
-
-    .msg.error .bubble {
-      background: #2a1515;
-      border-color: var(--danger);
-      color: #fca5a5;
-    }
+    .msg.user  .bubble { background: var(--user-bg); color: #fff; border-bottom-right-radius: 4px; }
+    .msg.agent .bubble { background: var(--agent-bg); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+    .msg.error .bubble { background: #2a1515; border-color: var(--danger); color: #fca5a5; }
 
     /* ── Typing indicator ── */
-    .typing .bubble {
-      display: flex; gap: 5px; align-items: center;
-      padding: 14px 16px;
-    }
-
-    .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--muted);
-      animation: bounce 1.2s infinite;
-    }
+    .typing .bubble { display: flex; gap: 5px; align-items: center; padding: 14px 16px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: bounce 1.2s infinite; }
     .dot:nth-child(2) { animation-delay: .2s; }
     .dot:nth-child(3) { animation-delay: .4s; }
-
-    @keyframes bounce {
-      0%, 60%, 100% { transform: translateY(0); }
-      30%            { transform: translateY(-6px); }
-    }
+    @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
 
     /* ── Welcome screen ── */
     #welcome {
@@ -190,97 +286,55 @@
       display: flex; flex-direction: column;
       align-items: center; gap: 16px;
     }
-
-    #welcome .icon {
-      width: 64px; height: 64px;
-      background: var(--accent);
-      border-radius: 16px;
-      display: grid; place-items: center;
-      font-size: 28px;
-    }
-
+    #welcome .icon { width: 64px; height: 64px; background: var(--accent); border-radius: 16px; display: grid; place-items: center; font-size: 28px; }
     #welcome h2 { font-size: 22px; font-weight: 600; }
     #welcome p  { color: var(--muted); font-size: 14px; max-width: 340px; line-height: 1.6; }
 
-    .suggestions {
-      display: flex; flex-wrap: wrap;
-      gap: 8px; justify-content: center;
-      margin-top: 8px;
-    }
-
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
     .suggestion {
-      padding: 8px 14px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      font-size: 13px; color: var(--text);
-      cursor: pointer; background: var(--surface);
-      transition: all .15s;
+      padding: 8px 14px; border: 1px solid var(--border); border-radius: 20px;
+      font-size: 13px; color: var(--text); cursor: pointer; background: var(--surface); transition: all .15s;
     }
     .suggestion:hover { border-color: var(--accent); color: var(--accent-lt); }
 
     /* ── Input bar ── */
-    #input-bar {
-      padding: 16px 20px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-    }
+    #input-bar { padding: 16px 20px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; }
 
     .input-row {
       display: flex; gap: 10px; align-items: flex-end;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 14px;
-      transition: border-color .15s;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px; transition: border-color .15s;
     }
     .input-row:focus-within { border-color: var(--accent); }
 
     #user-input {
-      flex: 1;
-      background: transparent; border: none; outline: none;
-      color: var(--text); font-size: 14px;
-      resize: none; max-height: 140px;
-      line-height: 1.5;
-      font-family: inherit;
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--text); font-size: 14px; resize: none; max-height: 140px;
+      line-height: 1.5; font-family: inherit;
     }
-
     #user-input::placeholder { color: var(--muted); }
 
     #send-btn {
-      width: 34px; height: 34px;
-      border-radius: 8px;
-      border: none; cursor: pointer;
-      background: var(--accent); color: #fff;
-      display: grid; place-items: center;
-      flex-shrink: 0;
-      transition: background .15s, opacity .15s;
+      width: 34px; height: 34px; border-radius: 8px; border: none; cursor: pointer;
+      background: var(--accent); color: #fff; display: grid; place-items: center;
+      flex-shrink: 0; transition: background .15s, opacity .15s;
     }
     #send-btn:hover   { background: var(--accent-lt); }
     #send-btn:disabled { opacity: .4; cursor: default; }
-
     #send-btn svg { width: 16px; height: 16px; }
 
     /* ── Status bar ── */
-    #status-bar {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 11px; color: var(--muted);
-      padding: 4px 0 0;
-    }
-
-    .status-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--muted);
-    }
-    .status-dot.ok     { background: #22c55e; }
-    .status-dot.error  { background: var(--danger); }
+    #status-bar { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); padding: 4px 0 0; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+    .status-dot.ok    { background: #22c55e; }
+    .status-dot.error { background: var(--danger); }
   </style>
 </head>
 <body>
 
 <!-- ── Header ── -->
 <header>
+  <button class="icon-btn" id="toggle-sidebar" title="Toggle history">☰</button>
   <div class="logo">A</div>
   <h1>ADK Agent Chat</h1>
 
@@ -290,37 +344,52 @@
     <button data-phase="3">Phase 3</button>
   </div>
 
-  <button class="new-chat-btn" id="new-chat-btn">+ New chat</button>
+  <button class="icon-btn" id="new-chat-btn" title="New chat">✏</button>
 </header>
 
-<!-- ── Phase description ── -->
-<div id="phase-desc">Loading…</div>
+<!-- ── Body ── -->
+<div class="body">
 
-<!-- ── Chat messages ── -->
-<div id="chat">
-  <div id="welcome">
-    <div class="icon">🤖</div>
-    <h2>Start a conversation</h2>
-    <p id="welcome-text">Select a phase above and type a message, or try one of the suggestions below.</p>
-    <div class="suggestions" id="suggestions"></div>
+  <!-- ── Sidebar ── -->
+  <div id="sidebar">
+    <div class="sidebar-header">
+      Chat History
+      <button class="clear-all-btn" id="clear-all-btn">Clear all</button>
+    </div>
+    <div id="history-list">
+      <div class="history-empty">No chats yet.<br>Start a conversation!</div>
+    </div>
   </div>
-</div>
 
-<!-- ── Input ── -->
-<div id="input-bar">
-  <div class="input-row">
-    <textarea id="user-input" rows="1" placeholder="Type a message…"></textarea>
-    <button id="send-btn" title="Send">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-           stroke-linecap="round" stroke-linejoin="round">
-        <line x1="22" y1="2" x2="11" y2="13"/>
-        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-      </svg>
-    </button>
-  </div>
-  <div id="status-bar">
-    <span class="status-dot" id="status-dot"></span>
-    <span id="status-text">Connecting…</span>
+  <!-- ── Main ── -->
+  <div class="main">
+    <div id="phase-desc">Loading…</div>
+
+    <div id="chat">
+      <div id="welcome">
+        <div class="icon">🤖</div>
+        <h2>Start a conversation</h2>
+        <p id="welcome-text">Select a phase and type a message, or try a suggestion.</p>
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+    </div>
+
+    <div id="input-bar">
+      <div class="input-row">
+        <textarea id="user-input" rows="1" placeholder="Type a message…"></textarea>
+        <button id="send-btn" title="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      <div id="status-bar">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Connecting…</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -328,53 +397,90 @@
 // ─────────────────────────────────────────────
 // Config
 // ─────────────────────────────────────────────
-const API = '';   // empty = same origin (server.py serves this file)
-const USER_ID = 'user_' + Math.random().toString(36).slice(2, 8);
+const API = '';
 
 const PHASES = {
   1: {
     app: 'phase1_single_agent',
     label: 'Phase 1 — Single Agent',
     desc: 'WeatherBot with weather + time tools. Ask about any supported city.',
-    suggestions: [
-      'What\'s the weather in Chicago?',
-      'What time is it in Tokyo?',
-      'Give me weather and time for London.',
-    ],
+    suggestions: ['What\'s the weather in Chicago?', 'What time is it in Tokyo?', 'Give me weather and time for London.'],
   },
   2: {
     app: 'phase2_stateful',
     label: 'Phase 2 — Stateful Agent',
     desc: 'Remembers your home city and watchlist across the conversation.',
-    suggestions: [
-      'My home city is Milwaukee.',
-      'What\'s the weather at home?',
-      'Add Chicago and Tokyo to my watchlist.',
-      'Show me my watchlist weather.',
-    ],
+    suggestions: ['My home city is Milwaukee.', 'What\'s the weather at home?', 'Add Chicago and Tokyo to my watchlist.', 'Show me my watchlist weather.'],
   },
   3: {
     app: 'phase3_multi_agent',
     label: 'Phase 3 — Multi-Agent',
     desc: 'Coordinator routes to weather, time, and travel specialist agents.',
-    suggestions: [
-      'What should I pack for Chicago?',
-      'Time difference between Milwaukee and Tokyo?',
-      'Plan my trip to London.',
-      'Everything about Mumbai.',
-    ],
+    suggestions: ['What should I pack for Chicago?', 'Time difference between Milwaukee and Tokyo?', 'Plan my trip to London.', 'Everything about Mumbai.'],
   },
 };
 
 // ─────────────────────────────────────────────
-// State
+// Persistent state (localStorage)
 // ─────────────────────────────────────────────
-let currentPhase   = 1;
-let sessionId      = newSessionId();
-let isWaiting      = false;
+
+// Stable user ID — persists across page reloads so sessions are retrievable
+function getOrCreateUserId() {
+  let id = localStorage.getItem('adk_user_id');
+  if (!id) { id = 'user_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('adk_user_id', id); }
+  return id;
+}
+
+const USER_ID = getOrCreateUserId();
+
+// History = array of { sessionId, phase, title, timestamp }
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem('adk_history') || '[]'); } catch { return []; }
+}
+
+function saveHistory(history) {
+  localStorage.setItem('adk_history', JSON.stringify(history));
+}
+
+function addToHistory(sessionId, phase, title) {
+  const history = loadHistory().filter(h => h.sessionId !== sessionId); // remove if exists
+  history.unshift({ sessionId, phase, title, timestamp: Date.now() });
+  saveHistory(history.slice(0, 100)); // keep last 100
+  renderHistory();
+}
+
+function updateHistoryTitle(sessionId, title) {
+  const history = loadHistory();
+  const item = history.find(h => h.sessionId === sessionId);
+  if (item) { item.title = title; saveHistory(history); renderHistory(); }
+}
+
+function deleteFromHistory(sessionId) {
+  saveHistory(loadHistory().filter(h => h.sessionId !== sessionId));
+  renderHistory();
+}
+
+// ─────────────────────────────────────────────
+// Runtime state
+// ─────────────────────────────────────────────
+let currentPhase = 1;
+let sessionId    = newSessionId();
+let isWaiting    = false;
 
 function newSessionId() {
   return 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+}
+
+function relativeTime(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m ago`;
+  if (h < 24) return `${h}h ago`;
+  if (d < 7)  return `${d}d ago`;
+  return new Date(ts).toLocaleDateString();
 }
 
 // ─────────────────────────────────────────────
@@ -386,33 +492,150 @@ const sendBtn     = document.getElementById('send-btn');
 const statusDot   = document.getElementById('status-dot');
 const statusText  = document.getElementById('status-text');
 const phaseDesc   = document.getElementById('phase-desc');
-const suggestions = document.getElementById('suggestions');
+const suggestionsEl = document.getElementById('suggestions');
 const welcomeText = document.getElementById('welcome-text');
 const welcome     = document.getElementById('welcome');
+const historyList = document.getElementById('history-list');
+const sidebar     = document.getElementById('sidebar');
+
+// ─────────────────────────────────────────────
+// Sidebar toggle
+// ─────────────────────────────────────────────
+let sidebarOpen = true;
+
+document.getElementById('toggle-sidebar').addEventListener('click', () => {
+  sidebarOpen = !sidebarOpen;
+  sidebar.classList.toggle('collapsed', !sidebarOpen);
+});
+
+// ─────────────────────────────────────────────
+// History rendering
+// ─────────────────────────────────────────────
+function renderHistory() {
+  const history = loadHistory();
+  if (!history.length) {
+    historyList.innerHTML = '<div class="history-empty">No chats yet.<br>Start a conversation!</div>';
+    return;
+  }
+
+  historyList.innerHTML = history.map(h => `
+    <div class="history-item ${h.sessionId === sessionId ? 'active' : ''}"
+         data-session="${h.sessionId}" data-phase="${h.phase}">
+      <div class="history-title">${escapeHtml(h.title)}</div>
+      <div class="history-meta">
+        <span class="phase-badge">P${h.phase}</span>
+        <span class="history-time">${relativeTime(h.timestamp)}</span>
+      </div>
+      <button class="delete-btn" data-session="${h.sessionId}" title="Delete">✕</button>
+    </div>
+  `).join('');
+
+  // Click to resume
+  historyList.querySelectorAll('.history-item').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-btn')) return;
+      resumeSession(el.dataset.session, +el.dataset.phase);
+    });
+  });
+
+  // Delete buttons
+  historyList.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteFromHistory(btn.dataset.session);
+      if (btn.dataset.session === sessionId) startNewChat();
+    });
+  });
+}
+
+document.getElementById('clear-all-btn').addEventListener('click', () => {
+  if (confirm('Clear all chat history?')) {
+    saveHistory([]);
+    renderHistory();
+    startNewChat();
+  }
+});
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─────────────────────────────────────────────
+// Resume a past session
+// ─────────────────────────────────────────────
+async function resumeSession(sid, phase) {
+  // Switch phase silently if needed
+  if (phase !== currentPhase) {
+    currentPhase = phase;
+    document.querySelectorAll('.phase-tabs button').forEach(b => {
+      b.classList.toggle('active', +b.dataset.phase === phase);
+    });
+    const p = PHASES[phase];
+    phaseDesc.textContent = `${p.label} — ${p.desc}`;
+    welcomeText.textContent = p.desc;
+    rebuildSuggestions(phase);
+  }
+
+  sessionId = sid;
+  renderHistory(); // update active highlight
+
+  // Load messages from the server
+  chatEl.innerHTML = '';
+  setStatus('', 'Loading history…');
+
+  try {
+    const { app } = PHASES[phase];
+    const res = await fetch(`${API}/apps/${app}/users/${USER_ID}/sessions/${sid}`);
+    if (!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+
+    const events = data.events || [];
+    if (!events.length) {
+      chatEl.appendChild(welcome);
+      welcome.style.display = 'flex';
+      setStatus('ready', 'Session loaded (empty)');
+      return;
+    }
+
+    // Render each turn from history
+    for (const event of events) {
+      if (!event.content?.parts?.length) continue;
+      const text = event.content.parts.map(p => p.text || '').join('').trim();
+      if (!text) continue;
+      const role = event.content.role === 'user' ? 'user' : 'agent';
+      addMessage(role, text);
+    }
+
+    setStatus('ready', `Resumed — ${events.length} messages loaded`);
+  } catch (err) {
+    addMessage('agent', `Could not load session history: ${err.message}`, 'error');
+    setStatus('error', 'Failed to load history');
+  }
+}
 
 // ─────────────────────────────────────────────
 // Phase switching
 // ─────────────────────────────────────────────
+function rebuildSuggestions(phase) {
+  suggestionsEl.innerHTML = '';
+  PHASES[phase].suggestions.forEach(s => {
+    const chip = document.createElement('button');
+    chip.className = 'suggestion';
+    chip.textContent = s;
+    chip.onclick = () => sendMessage(s);
+    suggestionsEl.appendChild(chip);
+  });
+}
+
 function switchPhase(phase) {
   currentPhase = phase;
   document.querySelectorAll('.phase-tabs button').forEach(b => {
     b.classList.toggle('active', +b.dataset.phase === phase);
   });
-
   const p = PHASES[phase];
   phaseDesc.textContent = `${p.label} — ${p.desc}`;
   welcomeText.textContent = p.desc;
-
-  // Rebuild suggestion chips
-  suggestions.innerHTML = '';
-  p.suggestions.forEach(s => {
-    const chip = document.createElement('button');
-    chip.className = 'suggestion';
-    chip.textContent = s;
-    chip.onclick = () => sendMessage(s);
-    suggestions.appendChild(chip);
-  });
-
+  rebuildSuggestions(phase);
   startNewChat();
 }
 
@@ -427,6 +650,7 @@ function startNewChat() {
   chatEl.innerHTML = '';
   chatEl.appendChild(welcome);
   welcome.style.display = 'flex';
+  renderHistory();
   setStatus('ready', 'New session started');
 }
 
@@ -442,22 +666,15 @@ function setStatus(state, text) {
 // Message rendering
 // ─────────────────────────────────────────────
 function addMessage(role, text, extra = '') {
-  // Hide welcome screen on first message
-  if (welcome.parentNode === chatEl) {
-    welcome.style.display = 'none';
-  }
-
-  const msg  = document.createElement('div');
+  if (welcome.parentNode === chatEl) welcome.style.display = 'none';
+  const msg    = document.createElement('div');
   msg.className = `msg ${role}${extra ? ' ' + extra : ''}`;
-
   const avatar = document.createElement('div');
   avatar.className = 'avatar';
   avatar.textContent = role === 'user' ? 'U' : '🤖';
-
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   bubble.textContent = text;
-
   msg.appendChild(avatar);
   msg.appendChild(bubble);
   chatEl.appendChild(msg);
@@ -470,26 +687,21 @@ function addTyping() {
   const msg = document.createElement('div');
   msg.className = 'msg agent typing';
   msg.id = 'typing-indicator';
-  msg.innerHTML = `
-    <div class="avatar">🤖</div>
-    <div class="bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+  msg.innerHTML = `<div class="avatar">🤖</div><div class="bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
   chatEl.appendChild(msg);
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
-function removeTyping() {
-  document.getElementById('typing-indicator')?.remove();
-}
+function removeTyping() { document.getElementById('typing-indicator')?.remove(); }
 
 // ─────────────────────────────────────────────
 // API calls
 // ─────────────────────────────────────────────
 async function ensureSession() {
   const { app } = PHASES[currentPhase];
-  const url = `${API}/apps/${app}/users/${USER_ID}/sessions/${sessionId}`;
-  try {
-    await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-  } catch (_) { /* session may already exist */ }
+  await fetch(`${API}/apps/${app}/users/${USER_ID}/sessions/${sessionId}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+  }).catch(() => {});
 }
 
 async function sendMessage(text) {
@@ -499,21 +711,23 @@ async function sendMessage(text) {
   inputEl.value = '';
   autoResize();
 
+  const isFirst = !loadHistory().find(h => h.sessionId === sessionId);
+
   addMessage('user', text);
   addTyping();
   setStatus('', 'Agent is thinking…');
 
+  // Save to history immediately with user's first message as title
+  if (isFirst) addToHistory(sessionId, currentPhase, text.slice(0, 60));
+
   try {
     await ensureSession();
-
     const { app } = PHASES[currentPhase];
     const res = await fetch(`${API}/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        appName:    app,
-        userId:     USER_ID,
-        sessionId:  sessionId,
+        appName: app, userId: USER_ID, sessionId,
         newMessage: { role: 'user', parts: [{ text }] },
       }),
     });
@@ -528,13 +742,11 @@ async function sendMessage(text) {
     }
 
     const events = await res.json();
-
-    // ADK /run returns an array of events — find the last final response
     let reply = null;
     for (const event of events) {
       if (event?.content?.parts?.length) {
-        const text = event.content.parts.map(p => p.text || '').join('').trim();
-        if (text) reply = text;
+        const t = event.content.parts.map(p => p.text || '').join('').trim();
+        if (t) reply = t;
       }
     }
 
@@ -542,7 +754,7 @@ async function sendMessage(text) {
       addMessage('agent', reply);
       setStatus('ready', 'Ready');
     } else {
-      addMessage('agent', '[No text response — check the server logs]', 'error');
+      addMessage('agent', '[No text response — check server logs]', 'error');
       setStatus('error', 'Empty response');
     }
 
@@ -563,10 +775,7 @@ async function sendMessage(text) {
 sendBtn.addEventListener('click', () => sendMessage(inputEl.value));
 
 inputEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage(inputEl.value);
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(inputEl.value); }
 });
 
 function autoResize() {
@@ -593,6 +802,7 @@ async function checkServer() {
 }
 
 switchPhase(1);
+renderHistory();
 checkServer();
 </script>
 </body>
