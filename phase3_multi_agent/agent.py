@@ -55,11 +55,12 @@ def _ollama(model_name: str):
 _provider = os.getenv("MODEL_PROVIDER", "google").lower()
 
 if _provider == "ollama":
-    # Each specialist gets its own model — change these to suit your hardware
-    WEATHER_MODEL  = _ollama("llama3.2:latest")   # lightest — fast lookups
-    TIME_MODEL     = _ollama("llama3.1:latest")   # solid reasoning for timezone math
-    TRAVEL_MODEL   = _ollama("qwen2.5:14b")       # strongest — rich travel advice
-    COORD_MODEL    = _ollama("qwen2.5:14b")       # coordinator needs best routing ability
+    # Read per-agent model from env, fall back to OLLAMA_MODEL if not set
+    _default = os.getenv("OLLAMA_MODEL", "llama3.2")
+    WEATHER_MODEL = _ollama(os.getenv("OLLAMA_MODEL_WEATHER",     _default))
+    TIME_MODEL    = _ollama(os.getenv("OLLAMA_MODEL_TIME",        _default))
+    TRAVEL_MODEL  = _ollama(os.getenv("OLLAMA_MODEL_TRAVEL",      _default))
+    COORD_MODEL   = _ollama(os.getenv("OLLAMA_MODEL_COORDINATOR", _default))
 else:
     # Anthropic / Google — single model for all agents
     WEATHER_MODEL = TIME_MODEL = TRAVEL_MODEL = COORD_MODEL = get_model()
