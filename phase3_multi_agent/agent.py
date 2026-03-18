@@ -52,15 +52,28 @@ def _ollama(model_name: str):
     os.environ["OLLAMA_API_BASE"] = base
     return LiteLlm(model=f"ollama_chat/{model_name}")
 
+def _hf(model_name: str):
+    """Returns a LiteLlm instance for the given HuggingFace model."""
+    token = os.getenv("HF_TOKEN", "")
+    os.environ["HF_TOKEN"] = token
+    return LiteLlm(model=model_name)
+
 _provider = os.getenv("MODEL_PROVIDER", "google").lower()
 
 if _provider == "ollama":
-    # Read per-agent model from env, fall back to OLLAMA_MODEL if not set
     _default = os.getenv("OLLAMA_MODEL", "llama3.2")
     WEATHER_MODEL = _ollama(os.getenv("OLLAMA_MODEL_WEATHER",     _default))
     TIME_MODEL    = _ollama(os.getenv("OLLAMA_MODEL_TIME",        _default))
     TRAVEL_MODEL  = _ollama(os.getenv("OLLAMA_MODEL_TRAVEL",      _default))
     COORD_MODEL   = _ollama(os.getenv("OLLAMA_MODEL_COORDINATOR", _default))
+
+elif _provider == "huggingface":
+    _default = os.getenv("HF_MODEL", "huggingface/sambanova/Qwen/Qwen2.5-72B-Instruct")
+    WEATHER_MODEL = _hf(os.getenv("HF_MODEL_WEATHER",     _default))
+    TIME_MODEL    = _hf(os.getenv("HF_MODEL_TIME",        _default))
+    TRAVEL_MODEL  = _hf(os.getenv("HF_MODEL_TRAVEL",      _default))
+    COORD_MODEL   = _hf(os.getenv("HF_MODEL_COORDINATOR", _default))
+
 else:
     # Anthropic / Google — single model for all agents
     WEATHER_MODEL = TIME_MODEL = TRAVEL_MODEL = COORD_MODEL = get_model()

@@ -5,9 +5,10 @@ All agent files import `get_model()` from here.
 To change providers, just set MODEL_PROVIDER in your .env file.
 
 Supported values:
-  MODEL_PROVIDER=anthropic   → Claude via Anthropic API (LiteLLM)
-  MODEL_PROVIDER=ollama      → Local model via Ollama (LiteLLM)
-  MODEL_PROVIDER=google      → Gemini via Google AI Studio (native ADK)
+  MODEL_PROVIDER=anthropic    → Claude via Anthropic API (LiteLLM)
+  MODEL_PROVIDER=ollama       → Local model via Ollama (LiteLLM)
+  MODEL_PROVIDER=huggingface  → HuggingFace Inference API (LiteLLM)
+  MODEL_PROVIDER=google       → Gemini via Google AI Studio (native ADK)
 
 HOW LITELLM WORKS IN ADK:
   Instead of passing a model string like "gemini-2.0-flash", you pass a
@@ -33,6 +34,8 @@ def get_model():
         return _anthropic_model()
     elif PROVIDER == "ollama":
         return _ollama_model()
+    elif PROVIDER == "huggingface":
+        return _huggingface_model()
     else:
         return _google_model()
 
@@ -83,6 +86,31 @@ def _ollama_model():
     # IMPORTANT: use ollama_chat/ not ollama/ — the plain ollama/ provider
     # ignores chat history and causes infinite tool call loops.
     return LiteLlm(model=f"ollama_chat/{model_name}")
+
+
+def _huggingface_model(model_name: str = ""):
+    """
+    HuggingFace Inference API via LiteLLM.
+    Requires: HF_TOKEN in .env
+
+    Best models for ADK tool-calling agents (Sambanova-routed, no gating):
+      huggingface/sambanova/Qwen/Qwen2.5-72B-Instruct
+      huggingface/sambanova/meta-llama/Llama-3.3-70B-Instruct
+      huggingface/together/deepseek-ai/DeepSeek-R1
+    """
+    from google.adk.models.lite_llm import LiteLlm
+
+    token = os.getenv("HF_TOKEN", "")
+    if not token or token == "your_huggingface_token_here":
+        raise ValueError(
+            "HF_TOKEN is not set. "
+            "Get yours at https://huggingface.co/settings/tokens and add it to .env"
+        )
+
+    os.environ["HF_TOKEN"] = token
+
+    name = model_name if model_name else os.getenv("HF_MODEL", "huggingface/sambanova/Qwen/Qwen2.5-72B-Instruct")
+    return LiteLlm(model=name)
 
 
 def _google_model():
