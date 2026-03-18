@@ -1,30 +1,20 @@
 """
 server.py — Production REST API server for all ADK phases
 ==========================================================
-Wraps any agent directory into a FastAPI app with full HTTP endpoints.
+Wraps any agent directory into a FastAPI app with full HTTP endpoints,
+and serves the chat frontend at http://localhost:8000/
 
 Run:
   python server.py --phase 1        # single agent
   python server.py --phase 3        # multi-agent
-  python server.py --phase 3 --ui   # with browser Dev UI
+  python server.py --phase 3 --ui   # also serve ADK Dev UI at /dev-ui
 
 Endpoints (Swagger docs at http://localhost:8000/docs):
+  GET  /                                                   → chat frontend
   GET  /list-apps                                          → list agents
   POST /apps/{app}/users/{uid}/sessions/{sid}              → create session
   POST /run                                                → single response
   POST /run_sse                                            → streaming (SSE)
-
-Calling /run (example with curl or Postman):
-  POST http://localhost:8000/run
-  {
-    "appName": "phase1_single_agent",
-    "userId":  "user_001",
-    "sessionId": "sess_001",
-    "newMessage": {
-      "role": "user",
-      "parts": [{ "text": "What's the weather in Tokyo?" }]
-    }
-  }
 """
 
 import argparse
@@ -33,6 +23,8 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 import uvicorn
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 load_dotenv()
 
@@ -82,6 +74,15 @@ def create_app(phase: int, serve_ui: bool = False):
         web=serve_ui,
     )
 
+    # Serve the chat frontend at /chat and its static assets
+    frontend_dir = project_root / "frontend"
+    if frontend_dir.exists():
+        app.mount("/chat", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+
+        @app.get("/", include_in_schema=False)
+        async def root():
+            return FileResponse(str(frontend_dir / "index.html"))
+
     return app
 
 
@@ -97,11 +98,12 @@ def main():
 
     phase_dir = PHASE_DIRS[args.phase]
     print(f"\n{'='*55}")
-    print(f"  ADK API Server — {phase_dir}")
-    print(f"  Provider : {os.getenv('MODEL_PROVIDER', 'google')}")
-    print(f"  API docs : http://{args.host}:{args.port}/docs")
+    print(f"  ADK Agent Server — {phase_dir}")
+    print(f"  Provider  : {os.getenv('MODEL_PROVIDER', 'google')}")
+    print(f"  Chat UI   : http://localhost:{args.port}/")
+    print(f"  API docs  : http://localhost:{args.port}/docs")
     if args.ui:
-        print(f"  Dev UI   : http://{args.host}:{args.port}/dev-ui")
+        print(f"  ADK UI    : http://localhost:{args.port}/dev-ui")
     print(f"{'='*55}\n")
 
     uvicorn.run(app, host=args.host, port=args.port)
