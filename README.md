@@ -67,7 +67,7 @@ Three specialist agents, each with their own tools, coordinated by a root agent:
 ---
 
 ## Supported Cities
-New York · London · Tokyo · Mumbai · New Delhi
+New York · London · Tokyo · Mumbai · New Delhi · Milwaukee · Chicago 
 
 ---
 
