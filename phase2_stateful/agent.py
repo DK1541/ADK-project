@@ -34,6 +34,8 @@ WEATHER_DATA = {
     "tokyo":      {"condition": "Partly Cloudy", "temp_c": 18, "humidity": "60%"},
     "mumbai":     {"condition": "Hot & Humid",   "temp_c": 34, "humidity": "85%"},
     "new delhi":  {"condition": "Hazy",          "temp_c": 32, "humidity": "55%"},
+    "chicago":    {"condition": "Windy",         "temp_c": 10, "humidity": "58%"},
+    "milwaukee":  {"condition": "Overcast",      "temp_c": 8,  "humidity": "63%"},
 }
 
 CITY_TIMEZONES = {
@@ -42,6 +44,8 @@ CITY_TIMEZONES = {
     "tokyo":     "Asia/Tokyo",
     "mumbai":    "Asia/Kolkata",
     "new delhi": "Asia/Kolkata",
+    "chicago":   "America/Chicago",
+    "milwaukee": "America/Chicago",
 }
 
 
@@ -199,7 +203,7 @@ root_agent = Agent(
         "  - When they ask about 'my weather' or 'weather here', call get_home_weather.\n"
         "  - When they ask about their watchlist, call get_watchlist_weather.\n"
         "  - Always use tools for data; never fabricate weather or time.\n"
-        "  - Supported cities: New York, London, Tokyo, Mumbai, New Delhi.\n"
+        "  - Supported cities: New York, London, Tokyo, Mumbai, New Delhi, Chicago, Milwaukee.\n"
         "  - Be concise and friendly."
     ),
     tools=[

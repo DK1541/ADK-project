@@ -33,6 +33,8 @@ WEATHER_DATA = {
     "tokyo":      {"condition": "Partly Cloudy", "temp_c": 18, "humidity": "60%"},
     "mumbai":     {"condition": "Hot & Humid",   "temp_c": 34, "humidity": "85%"},
     "new delhi":  {"condition": "Hazy",          "temp_c": 32, "humidity": "55%"},
+    "chicago":    {"condition": "Windy",         "temp_c": 10, "humidity": "58%"},
+    "milwaukee":  {"condition": "Overcast",      "temp_c": 8,  "humidity": "63%"},
 }
 
 CITY_TIMEZONES = {
@@ -41,6 +43,8 @@ CITY_TIMEZONES = {
     "tokyo":     "Asia/Tokyo",
     "mumbai":    "Asia/Kolkata",
     "new delhi": "Asia/Kolkata",
+    "chicago":   "America/Chicago",
+    "milwaukee": "America/Chicago",
 }
 
 
@@ -128,7 +132,7 @@ root_agent = Agent(
         "- If the user asks for both weather and time, call both tools.\n"
         "- If a city is not supported, tell the user which cities are available.\n"
         "- Keep responses concise and conversational.\n"
-        "- Supported cities: New York, London, Tokyo, Mumbai, New Delhi."
+        "- Supported cities: New York, London, Tokyo, Mumbai, New Delhi, Chicago, Milwaukee."
     ),
     tools=[get_weather, get_current_time],
 )

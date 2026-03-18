@@ -46,6 +46,8 @@ WEATHER_DATA = {
     "tokyo":      {"condition": "Partly Cloudy", "temp_c": 18, "humidity": "60%", "uv_index": 4},
     "mumbai":     {"condition": "Hot & Humid",   "temp_c": 34, "humidity": "85%", "uv_index": 8},
     "new delhi":  {"condition": "Hazy",          "temp_c": 32, "humidity": "55%", "uv_index": 7},
+    "chicago":    {"condition": "Windy",         "temp_c": 10, "humidity": "58%", "uv_index": 3},
+    "milwaukee":  {"condition": "Overcast",      "temp_c": 8,  "humidity": "63%", "uv_index": 2},
 }
 
 CITY_TIMEZONES = {
@@ -54,6 +56,8 @@ CITY_TIMEZONES = {
     "tokyo":     "Asia/Tokyo",
     "mumbai":    "Asia/Kolkata",
     "new delhi": "Asia/Kolkata",
+    "chicago":   "America/Chicago",
+    "milwaukee": "America/Chicago",
 }
 
 TRAVEL_TIPS = {
@@ -81,6 +85,16 @@ TRAVEL_TIPS = {
         "best_season": "Winter (Oct–Mar)",
         "must_see": ["Red Fort", "Qutub Minar", "India Gate", "Humayun's Tomb"],
         "local_tips": "Use the Delhi Metro. Bargain at markets. Air quality varies — check AQI.",
+    },
+    "chicago": {
+        "best_season": "Summer (Jun–Aug)",
+        "must_see": ["Millennium Park", "Art Institute of Chicago", "Navy Pier", "The 606 Trail"],
+        "local_tips": "Wind off Lake Michigan makes it feel colder — layer up. The 'L' train covers most attractions.",
+    },
+    "milwaukee": {
+        "best_season": "Summer (Jun–Aug)",
+        "must_see": ["Milwaukee Art Museum", "Harley-Davidson Museum", "Third Ward", "Lakefront Brewery"],
+        "local_tips": "Very walkable downtown. Known for Friday fish fries and craft beer. Free Summerfest in summer.",
     },
 }
 
@@ -131,7 +145,7 @@ weather_agent = Agent(
         "You are the Weather Specialist. Answer weather questions accurately.\n"
         "Always use get_weather_detailed for any city weather request.\n"
         "Include UV advice when UV index is high.\n"
-        "Supported cities: New York, London, Tokyo, Mumbai, New Delhi."
+        "Supported cities: New York, London, Tokyo, Mumbai, New Delhi, Chicago, Milwaukee."
     ),
     tools=[get_weather_detailed],
 )
@@ -214,7 +228,7 @@ time_agent = Agent(
         "You are the Time Specialist. Answer all time and timezone questions.\n"
         "Use get_time_with_offset for 'what time is it in X' questions.\n"
         "Use get_time_difference for 'time difference between X and Y' questions.\n"
-        "Supported cities: New York, London, Tokyo, Mumbai, New Delhi."
+        "Supported cities: New York, London, Tokyo, Mumbai, New Delhi, Chicago, Milwaukee."
     ),
     tools=[get_time_with_offset, get_time_difference],
 )
@@ -300,7 +314,7 @@ travel_agent = Agent(
         "Use get_travel_tips for general trip planning and attractions.\n"
         "Use get_packing_advice for packing and clothing questions.\n"
         "You can combine both tools when the user is planning a full trip.\n"
-        "Supported cities: New York, London, Tokyo, Mumbai, New Delhi."
+        "Supported cities: New York, London, Tokyo, Mumbai, New Delhi, Chicago, Milwaukee."
     ),
     tools=[get_travel_tips, get_packing_advice],
 )
@@ -333,7 +347,7 @@ root_agent = Agent(
         "  - Synthesise the answers into one clear, helpful response.\n"
         "  - Never make up data — always delegate to specialists.\n"
         "  - If unsure which specialist to use, ask the user to clarify.\n"
-        "  - Supported cities: New York, London, Tokyo, Mumbai, New Delhi."
+        "  - Supported cities: New York, London, Tokyo, Mumbai, New Delhi, Chicago, Milwaukee."
     ),
     sub_agents=[weather_agent, time_agent, travel_agent],
 )
