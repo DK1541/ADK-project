@@ -328,6 +328,57 @@
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
     .status-dot.ok    { background: #22c55e; }
     .status-dot.error { background: var(--danger); }
+
+    /* ── Attachments ── */
+    .attach-btn {
+      width: 30px; height: 30px; border-radius: 7px; border: none; cursor: pointer;
+      background: transparent; color: var(--muted); font-size: 18px;
+      display: grid; place-items: center; flex-shrink: 0; transition: color .15s, background .15s;
+      line-height: 1;
+    }
+    .attach-btn:hover { color: var(--accent); background: var(--border); }
+
+    #attachment-preview {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 0 0 10px;
+    }
+    #attachment-preview:empty { display: none; }
+
+    .attachment-chip {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--agent-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 4px 8px 4px 6px;
+      font-size: 12px; color: var(--text); max-width: 200px;
+    }
+
+    .attachment-chip img {
+      width: 28px; height: 28px; object-fit: cover; border-radius: 4px; flex-shrink: 0;
+    }
+
+    .attachment-chip .chip-icon {
+      width: 28px; height: 28px; border-radius: 4px;
+      background: var(--border); display: grid; place-items: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+
+    .chip-name {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+    }
+
+    .chip-remove {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 14px; padding: 0 2px; flex-shrink: 0;
+      line-height: 1;
+    }
+    .chip-remove:hover { color: var(--danger); }
+
+    /* Attachment in chat bubble */
+    .bubble img { max-width: 260px; max-height: 200px; border-radius: 8px; display: block; margin-bottom: 6px; }
+    .bubble .doc-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 5px 10px; font-size: 12px; margin-bottom: 6px;
+    }
   </style>
 </head>
 <body>
@@ -375,8 +426,17 @@
     </div>
 
     <div id="input-bar">
+      <!-- Attachment previews sit above the input row -->
+      <div id="attachment-preview"></div>
+
       <div class="input-row">
-        <textarea id="user-input" rows="1" placeholder="Type a message…"></textarea>
+        <!-- Hidden file picker: images + documents -->
+        <input type="file" id="file-input" multiple hidden
+               accept="image/png,image/jpeg,image/webp,image/gif,image/heic,
+                       application/pdf,text/plain,text/markdown,text/csv,
+                       .md,.csv,.txt,.pdf" />
+        <button class="attach-btn" id="attach-btn" title="Attach image or document">+</button>
+        <textarea id="user-input" rows="1" placeholder="Type a message… (or attach a file)"></textarea>
         <button id="send-btn" title="Send">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                stroke-linecap="round" stroke-linejoin="round">
@@ -705,20 +765,31 @@ async function ensureSession() {
 }
 
 async function sendMessage(text) {
-  if (!text.trim() || isWaiting) return;
+  if (!text.trim() && !pendingFiles.length) return;
+  if (isWaiting) return;
   isWaiting = true;
   sendBtn.disabled = true;
+
+  const parts        = buildParts(text);
+  const displayText  = text.trim() || (pendingFiles.length ? `[${pendingFiles.length} file(s)]` : '');
+  const hasFiles     = pendingFiles.length > 0;
+
   inputEl.value = '';
   autoResize();
 
   const isFirst = !loadHistory().find(h => h.sessionId === sessionId);
 
-  addMessage('user', text);
+  // Show user bubble (with file previews if any)
+  const userBubble = addMessage('user', displayText);
+  if (hasFiles) addAttachmentsToBubble(userBubble);
+
+  // Clear attachments AFTER capturing them in parts
+  clearAttachments();
+
   addTyping();
   setStatus('', 'Agent is thinking…');
 
-  // Save to history immediately with user's first message as title
-  if (isFirst) addToHistory(sessionId, currentPhase, text.slice(0, 60));
+  if (isFirst) addToHistory(sessionId, currentPhase, displayText.slice(0, 60));
 
   try {
     await ensureSession();
@@ -728,7 +799,7 @@ async function sendMessage(text) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         appName: app, userId: USER_ID, sessionId,
-        newMessage: { role: 'user', parts: [{ text }] },
+        newMessage: { role: 'user', parts },
       }),
     });
 
@@ -767,6 +838,153 @@ async function sendMessage(text) {
     sendBtn.disabled = false;
     inputEl.focus();
   }
+}
+
+// ─────────────────────────────────────────────
+// File attachments
+// ─────────────────────────────────────────────
+
+const attachBtn     = document.getElementById('attach-btn');
+const fileInput     = document.getElementById('file-input');
+const previewEl     = document.getElementById('attachment-preview');
+
+// pending attachments: [{ name, mimeType, data (base64), objectUrl?, isText, textContent? }]
+let pendingFiles = [];
+
+const IMAGE_TYPES = ['image/png','image/jpeg','image/webp','image/gif','image/heic','image/heif'];
+const TEXT_TYPES  = ['text/plain','text/markdown','text/csv'];
+
+attachBtn.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', async () => {
+  for (const file of fileInput.files) {
+    if (pendingFiles.length >= 5) { alert('Maximum 5 attachments per message.'); break; }
+    await processFile(file);
+  }
+  fileInput.value = '';
+  renderPreviews();
+});
+
+// Drag-and-drop onto the input bar
+document.getElementById('input-bar').addEventListener('dragover', e => {
+  e.preventDefault();
+  e.currentTarget.style.outline = `2px dashed var(--accent)`;
+});
+document.getElementById('input-bar').addEventListener('dragleave', e => {
+  e.currentTarget.style.outline = '';
+});
+document.getElementById('input-bar').addEventListener('drop', async e => {
+  e.preventDefault();
+  e.currentTarget.style.outline = '';
+  for (const file of e.dataTransfer.files) {
+    if (pendingFiles.length >= 5) break;
+    await processFile(file);
+  }
+  renderPreviews();
+});
+
+async function processFile(file) {
+  const isImage = IMAGE_TYPES.includes(file.type);
+  const isText  = TEXT_TYPES.includes(file.type) || file.name.endsWith('.md');
+  const isPDF   = file.type === 'application/pdf';
+
+  if (!isImage && !isText && !isPDF) {
+    alert(`Unsupported file type: ${file.type || file.name}`);
+    return;
+  }
+
+  if (isText) {
+    // Text files: read as plain text, send as a text part (works with all models)
+    const textContent = await file.text();
+    pendingFiles.push({ name: file.name, mimeType: file.type || 'text/plain', isText: true, textContent });
+  } else {
+    // Images and PDFs: base64 encode → inlineData
+    const base64 = await toBase64(file);
+    const objectUrl = isImage ? URL.createObjectURL(file) : null;
+    pendingFiles.push({ name: file.name, mimeType: file.type, isText: false, data: base64, objectUrl });
+  }
+}
+
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result.split(',')[1]); // strip data: prefix
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPreviews() {
+  previewEl.innerHTML = '';
+  pendingFiles.forEach((f, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'attachment-chip';
+
+    if (f.objectUrl) {
+      chip.innerHTML = `<img src="${f.objectUrl}" alt="${f.name}" />`;
+    } else {
+      const icon = f.mimeType === 'application/pdf' ? '📄' : '📝';
+      chip.innerHTML = `<span class="chip-icon">${icon}</span>`;
+    }
+
+    chip.innerHTML += `
+      <span class="chip-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+      <button class="chip-remove" data-index="${i}" title="Remove">✕</button>`;
+
+    previewEl.appendChild(chip);
+  });
+
+  previewEl.querySelectorAll('.chip-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = +btn.dataset.index;
+      if (pendingFiles[idx]?.objectUrl) URL.revokeObjectURL(pendingFiles[idx].objectUrl);
+      pendingFiles.splice(idx, 1);
+      renderPreviews();
+    });
+  });
+}
+
+function buildParts(text) {
+  // ADK /run uses camelCase: inlineData + mimeType
+  const parts = [];
+
+  // Text files → prepend as quoted text block
+  pendingFiles.filter(f => f.isText).forEach(f => {
+    parts.push({ text: `[File: ${f.name}]\n\`\`\`\n${f.textContent}\n\`\`\`` });
+  });
+
+  // User's own message text
+  if (text.trim()) parts.push({ text });
+
+  // Images + PDFs → inlineData
+  pendingFiles.filter(f => !f.isText).forEach(f => {
+    parts.push({ inlineData: { mimeType: f.mimeType, data: f.data, displayName: f.name } });
+  });
+
+  return parts;
+}
+
+function clearAttachments() {
+  pendingFiles.forEach(f => { if (f.objectUrl) URL.revokeObjectURL(f.objectUrl); });
+  pendingFiles = [];
+  renderPreviews();
+}
+
+// Show attached files in the chat bubble
+function addAttachmentsToBubble(bubble) {
+  pendingFiles.forEach(f => {
+    if (f.objectUrl) {
+      const img = document.createElement('img');
+      img.src = f.objectUrl;
+      img.alt = f.name;
+      bubble.prepend(img);
+    } else {
+      const chip = document.createElement('div');
+      chip.className = 'doc-chip';
+      chip.innerHTML = `${f.mimeType === 'application/pdf' ? '📄' : '📝'} ${escapeHtml(f.name)}`;
+      bubble.prepend(chip);
+    }
+  });
 }
 
 // ─────────────────────────────────────────────
