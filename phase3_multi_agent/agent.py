@@ -31,10 +31,38 @@ HOW DELEGATION WORKS:
 """
 
 import datetime
+import os
 from zoneinfo import ZoneInfo
 
 from google.adk.agents import Agent, SequentialAgent
+from google.adk.models.lite_llm import LiteLlm
 from model_config import get_model
+
+# ---------------------------------------------------------------------------
+# Per-agent model assignment
+# ---------------------------------------------------------------------------
+# When MODEL_PROVIDER=ollama each specialist runs on a different model.
+# You can tune this — swap any model name to whichever you prefer.
+# When MODEL_PROVIDER=anthropic or google, all agents fall back to get_model().
+# ---------------------------------------------------------------------------
+
+def _ollama(model_name: str):
+    """Returns a LiteLlm instance for the given local Ollama model."""
+    base = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
+    os.environ["OLLAMA_API_BASE"] = base
+    return LiteLlm(model=f"ollama_chat/{model_name}")
+
+_provider = os.getenv("MODEL_PROVIDER", "google").lower()
+
+if _provider == "ollama":
+    # Each specialist gets its own model — change these to suit your hardware
+    WEATHER_MODEL  = _ollama("llama3.2:latest")   # lightest — fast lookups
+    TIME_MODEL     = _ollama("llama3.1:latest")   # solid reasoning for timezone math
+    TRAVEL_MODEL   = _ollama("qwen2.5:14b")       # strongest — rich travel advice
+    COORD_MODEL    = _ollama("qwen2.5:14b")       # coordinator needs best routing ability
+else:
+    # Anthropic / Google — single model for all agents
+    WEATHER_MODEL = TIME_MODEL = TRAVEL_MODEL = COORD_MODEL = get_model()
 
 # ---------------------------------------------------------------------------
 # Data (same mock data as previous phases)
@@ -134,7 +162,7 @@ def get_weather_detailed(city: str) -> dict:
 
 weather_agent = Agent(
     name="weather_specialist",
-    model=get_model(),
+    model=WEATHER_MODEL,
     # IMPORTANT: description is what the coordinator reads to decide delegation.
     # Be specific — vague descriptions cause mis-routing.
     description=(
@@ -219,7 +247,7 @@ def get_time_difference(city1: str, city2: str) -> dict:
 
 time_agent = Agent(
     name="time_specialist",
-    model=get_model(),
+    model=TIME_MODEL,
     description=(
         "Handles time-related questions: current local time, timezone info, "
         "and time differences between cities."
@@ -304,7 +332,7 @@ def get_packing_advice(city: str) -> dict:
 
 travel_agent = Agent(
     name="travel_advisor",
-    model=get_model(),
+    model=TRAVEL_MODEL,
     description=(
         "Handles travel planning: attractions, best travel seasons, packing advice, "
         "and local tips for cities."
@@ -333,7 +361,7 @@ travel_agent = Agent(
 
 root_agent = Agent(
     name="travel_assistant_coordinator",
-    model=get_model(),
+    model=COORD_MODEL,
     description="A comprehensive travel assistant covering weather, time, and trip planning.",
     instruction=(
         "You are TravelBot, a comprehensive travel assistant.\n\n"
