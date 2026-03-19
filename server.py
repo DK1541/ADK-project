@@ -1,13 +1,10 @@
 """
-server.py — Production REST API server for all ADK phases
-==========================================================
-Wraps any agent directory into a FastAPI app with full HTTP endpoints,
-and serves the chat frontend at http://localhost:8000/
-
+server.py — REST API server for the ADK multi-agent assistant
+=============================================================
 Run:
-  python server.py --phase 1        # single agent
-  python server.py --phase 3        # multi-agent
-  python server.py --phase 3 --ui   # also serve ADK Dev UI at /dev-ui
+  python server.py
+  python server.py --port 8080
+  python server.py --ui       # also serve ADK Dev UI at /dev-ui
 
 Endpoints (Swagger docs at http://localhost:8000/docs):
   GET  /                                                   → chat frontend
@@ -28,44 +25,28 @@ from fastapi.responses import FileResponse
 
 load_dotenv()
 
-# Map phase numbers to their directory names
-PHASE_DIRS = {
-    1: "phase1_single_agent",
-    2: "phase2_stateful",
-    3: "phase3_multi_agent",
-}
 
-
-def create_app(phase: int, serve_ui: bool = False):
+def create_app(serve_ui: bool = False):
     """
-    Builds the FastAPI app for the given phase.
+    Builds the FastAPI app for the agents/ directory.
 
     get_fast_api_app() scans the agent directory for a module that exposes
     a `root_agent` variable — the same convention used by `adk web`.
-
-    Parameters:
-      agents_dir         — path to the folder containing the agent module
-      session_service_uri— where sessions are stored:
-                             None / "" → in-memory (lost on restart)
-                             "sqlite+aiosqlite:///sessions.db" → SQLite file
-      allow_origins      — CORS origins (use specific domains in production)
-      web                — True to also serve the Dev UI at /
     """
     from google.adk.cli.fast_api import get_fast_api_app
 
     project_root = Path(__file__).parent
-    agent_dir = project_root / PHASE_DIRS[phase]
+    agent_dir = project_root / "agents"
 
     if not agent_dir.exists():
         print(f"ERROR: {agent_dir} does not exist.")
         sys.exit(1)
 
-    # Add project root to path so agent modules can import model_config
+    # Add project root to path so agent modules can import model_config / shared_tools
     sys.path.insert(0, str(project_root))
 
     # SQLite for persistent sessions across restarts.
-    # Change to "" for in-memory (simpler, sessions lost on restart).
-    session_db = f"sqlite+aiosqlite:///sessions_phase{phase}.db"
+    session_db = "sqlite+aiosqlite:///sessions.db"
 
     app = get_fast_api_app(
         agents_dir=str(agent_dir),
@@ -74,7 +55,7 @@ def create_app(phase: int, serve_ui: bool = False):
         web=serve_ui,
     )
 
-    # Serve the chat frontend at /chat and its static assets
+    # Serve the chat frontend at /
     frontend_dir = project_root / "frontend"
     if frontend_dir.exists():
         app.mount("/chat", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
@@ -87,18 +68,16 @@ def create_app(phase: int, serve_ui: bool = False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ADK REST API Server")
-    parser.add_argument("--phase", type=int, choices=[1, 2, 3], default=1)
+    parser = argparse.ArgumentParser(description="ADK Multi-Agent REST API Server")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--ui", action="store_true", help="Also serve Dev UI")
+    parser.add_argument("--ui", action="store_true", help="Also serve ADK Dev UI at /dev-ui")
     args = parser.parse_args()
 
-    app = create_app(phase=args.phase, serve_ui=args.ui)
+    app = create_app(serve_ui=args.ui)
 
-    phase_dir = PHASE_DIRS[args.phase]
     print(f"\n{'='*55}")
-    print(f"  ADK Agent Server — {phase_dir}")
+    print(f"  ADK Assistant — 6 Specialist Agents")
     print(f"  Provider  : {os.getenv('MODEL_PROVIDER', 'google')}")
     print(f"  Chat UI   : http://localhost:{args.port}/")
     print(f"  API docs  : http://localhost:{args.port}/docs")

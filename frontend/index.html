@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ADK Agent Chat</title>
+  <title>ADK Assistant</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -55,23 +55,14 @@
 
     header h1 { font-size: 16px; font-weight: 600; flex: 1; }
 
-    .phase-tabs {
-      display: flex; gap: 4px;
+    .header-badge {
+      font-size: 12px;
+      color: var(--muted);
       background: var(--bg);
-      padding: 4px;
-      border-radius: 10px;
       border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 10px;
     }
-
-    .phase-tabs button {
-      padding: 5px 14px;
-      border: none; cursor: pointer;
-      border-radius: 7px;
-      font-size: 13px; font-weight: 500;
-      background: transparent; color: var(--muted);
-      transition: all .15s;
-    }
-    .phase-tabs button.active { background: var(--accent); color: #fff; }
 
     .icon-btn {
       width: 34px; height: 34px;
@@ -172,15 +163,6 @@
       margin-top: 3px;
     }
 
-    .phase-badge {
-      font-size: 10px;
-      padding: 1px 6px;
-      border-radius: 10px;
-      background: var(--border);
-      color: var(--muted);
-      font-weight: 500;
-    }
-
     .history-time {
       font-size: 10px;
       color: var(--muted);
@@ -199,16 +181,6 @@
     }
     .history-item:hover .delete-btn { display: grid; }
     .delete-btn:hover { color: var(--danger); background: #2a1515; }
-
-    /* ── Phase description bar ── */
-    #phase-desc {
-      padding: 8px 20px;
-      font-size: 12px;
-      color: var(--muted);
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
 
     /* ── Main column ── */
     .main {
@@ -288,7 +260,7 @@
     }
     #welcome .icon { width: 64px; height: 64px; background: var(--accent); border-radius: 16px; display: grid; place-items: center; font-size: 28px; }
     #welcome h2 { font-size: 22px; font-weight: 600; }
-    #welcome p  { color: var(--muted); font-size: 14px; max-width: 340px; line-height: 1.6; }
+    #welcome p  { color: var(--muted); font-size: 14px; max-width: 380px; line-height: 1.6; }
 
     .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
     .suggestion {
@@ -387,14 +359,8 @@
 <header>
   <button class="icon-btn" id="toggle-sidebar" title="Toggle history">☰</button>
   <div class="logo">A</div>
-  <h1>ADK Agent Chat</h1>
-
-  <div class="phase-tabs">
-    <button class="active" data-phase="1">Phase 1</button>
-    <button data-phase="2">Phase 2</button>
-    <button data-phase="3">Phase 3</button>
-  </div>
-
+  <h1>ADK Assistant</h1>
+  <span class="header-badge">6 specialists</span>
   <button class="icon-btn" id="new-chat-btn" title="New chat">✏</button>
 </header>
 
@@ -414,29 +380,25 @@
 
   <!-- ── Main ── -->
   <div class="main">
-    <div id="phase-desc">Loading…</div>
-
     <div id="chat">
       <div id="welcome">
         <div class="icon">🤖</div>
-        <h2>Start a conversation</h2>
-        <p id="welcome-text">Select a phase and type a message, or try a suggestion.</p>
+        <h2>What can I help with?</h2>
+        <p>Powered by six specialist agents: weather &amp; time, travel, math, language, code, and knowledge.</p>
         <div class="suggestions" id="suggestions"></div>
       </div>
     </div>
 
     <div id="input-bar">
-      <!-- Attachment previews sit above the input row -->
       <div id="attachment-preview"></div>
 
       <div class="input-row">
-        <!-- Hidden file picker: images + documents -->
         <input type="file" id="file-input" multiple hidden
                accept="image/png,image/jpeg,image/webp,image/gif,image/heic,
                        application/pdf,text/plain,text/markdown,text/csv,
                        .md,.csv,.txt,.pdf" />
         <button class="attach-btn" id="attach-btn" title="Attach image or document">+</button>
-        <textarea id="user-input" rows="1" placeholder="Type a message… (or attach a file)"></textarea>
+        <textarea id="user-input" rows="1" placeholder="Ask anything… (Shift+Enter for new line)"></textarea>
         <button id="send-btn" title="Send">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                stroke-linecap="round" stroke-linejoin="round">
@@ -457,34 +419,24 @@
 // ─────────────────────────────────────────────
 // Config
 // ─────────────────────────────────────────────
-const API = '';
+const API     = '';
+const APP_NAME = 'assistant';
 
-const PHASES = {
-  1: {
-    app: 'phase1_single_agent',
-    label: 'Phase 1 — Single Agent',
-    desc: 'WeatherBot with weather + time tools. Ask about any supported city.',
-    suggestions: ['What\'s the weather in Chicago?', 'What time is it in Tokyo?', 'Give me weather and time for London.'],
-  },
-  2: {
-    app: 'phase2_stateful',
-    label: 'Phase 2 — Stateful Agent',
-    desc: 'Remembers your home city and watchlist across the conversation.',
-    suggestions: ['My home city is Milwaukee.', 'What\'s the weather at home?', 'Add Chicago and Tokyo to my watchlist.', 'Show me my watchlist weather.'],
-  },
-  3: {
-    app: 'phase3_multi_agent',
-    label: 'Phase 3 — Multi-Agent',
-    desc: 'Coordinator routes to weather, time, and travel specialist agents.',
-    suggestions: ['What should I pack for Chicago?', 'Time difference between Milwaukee and Tokyo?', 'Plan my trip to London.', 'Everything about Mumbai.'],
-  },
-};
+const SUGGESTIONS = [
+  "What's the weather in Chicago?",
+  "What time is it in Tokyo right now?",
+  "Write a Python function to reverse a linked list.",
+  "Translate 'Good morning, how are you?' to Japanese.",
+  "What caused World War I?",
+  "Convert 150 lbs to kg.",
+  "Plan a trip to London — what should I see?",
+  "Explain the difference between TCP and UDP.",
+];
 
 // ─────────────────────────────────────────────
 // Persistent state (localStorage)
 // ─────────────────────────────────────────────
 
-// Stable user ID — persists across page reloads so sessions are retrievable
 function getOrCreateUserId() {
   let id = localStorage.getItem('adk_user_id');
   if (!id) { id = 'user_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('adk_user_id', id); }
@@ -493,7 +445,6 @@ function getOrCreateUserId() {
 
 const USER_ID = getOrCreateUserId();
 
-// History = array of { sessionId, phase, title, timestamp }
 function loadHistory() {
   try { return JSON.parse(localStorage.getItem('adk_history') || '[]'); } catch { return []; }
 }
@@ -502,10 +453,10 @@ function saveHistory(history) {
   localStorage.setItem('adk_history', JSON.stringify(history));
 }
 
-function addToHistory(sessionId, phase, title) {
-  const history = loadHistory().filter(h => h.sessionId !== sessionId); // remove if exists
-  history.unshift({ sessionId, phase, title, timestamp: Date.now() });
-  saveHistory(history.slice(0, 100)); // keep last 100
+function addToHistory(sessionId, title) {
+  const history = loadHistory().filter(h => h.sessionId !== sessionId);
+  history.unshift({ sessionId, title, timestamp: Date.now() });
+  saveHistory(history.slice(0, 100));
   renderHistory();
 }
 
@@ -523,9 +474,8 @@ function deleteFromHistory(sessionId) {
 // ─────────────────────────────────────────────
 // Runtime state
 // ─────────────────────────────────────────────
-let currentPhase = 1;
-let sessionId    = newSessionId();
-let isWaiting    = false;
+let sessionId = newSessionId();
+let isWaiting = false;
 
 function newSessionId() {
   return 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
@@ -546,17 +496,15 @@ function relativeTime(ts) {
 // ─────────────────────────────────────────────
 // DOM refs
 // ─────────────────────────────────────────────
-const chatEl      = document.getElementById('chat');
-const inputEl     = document.getElementById('user-input');
-const sendBtn     = document.getElementById('send-btn');
-const statusDot   = document.getElementById('status-dot');
-const statusText  = document.getElementById('status-text');
-const phaseDesc   = document.getElementById('phase-desc');
-const suggestionsEl = document.getElementById('suggestions');
-const welcomeText = document.getElementById('welcome-text');
-const welcome     = document.getElementById('welcome');
-const historyList = document.getElementById('history-list');
-const sidebar     = document.getElementById('sidebar');
+const chatEl       = document.getElementById('chat');
+const inputEl      = document.getElementById('user-input');
+const sendBtn      = document.getElementById('send-btn');
+const statusDot    = document.getElementById('status-dot');
+const statusText   = document.getElementById('status-text');
+const suggestionsEl= document.getElementById('suggestions');
+const welcome      = document.getElementById('welcome');
+const historyList  = document.getElementById('history-list');
+const sidebar      = document.getElementById('sidebar');
 
 // ─────────────────────────────────────────────
 // Sidebar toggle
@@ -580,25 +528,22 @@ function renderHistory() {
 
   historyList.innerHTML = history.map(h => `
     <div class="history-item ${h.sessionId === sessionId ? 'active' : ''}"
-         data-session="${h.sessionId}" data-phase="${h.phase}">
+         data-session="${h.sessionId}">
       <div class="history-title">${escapeHtml(h.title)}</div>
       <div class="history-meta">
-        <span class="phase-badge">P${h.phase}</span>
         <span class="history-time">${relativeTime(h.timestamp)}</span>
       </div>
       <button class="delete-btn" data-session="${h.sessionId}" title="Delete">✕</button>
     </div>
   `).join('');
 
-  // Click to resume
   historyList.querySelectorAll('.history-item').forEach(el => {
     el.addEventListener('click', (e) => {
       if (e.target.classList.contains('delete-btn')) return;
-      resumeSession(el.dataset.session, +el.dataset.phase);
+      resumeSession(el.dataset.session);
     });
   });
 
-  // Delete buttons
   historyList.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -623,29 +568,15 @@ function escapeHtml(str) {
 // ─────────────────────────────────────────────
 // Resume a past session
 // ─────────────────────────────────────────────
-async function resumeSession(sid, phase) {
-  // Switch phase silently if needed
-  if (phase !== currentPhase) {
-    currentPhase = phase;
-    document.querySelectorAll('.phase-tabs button').forEach(b => {
-      b.classList.toggle('active', +b.dataset.phase === phase);
-    });
-    const p = PHASES[phase];
-    phaseDesc.textContent = `${p.label} — ${p.desc}`;
-    welcomeText.textContent = p.desc;
-    rebuildSuggestions(phase);
-  }
-
+async function resumeSession(sid) {
   sessionId = sid;
-  renderHistory(); // update active highlight
+  renderHistory();
 
-  // Load messages from the server
   chatEl.innerHTML = '';
   setStatus('', 'Loading history…');
 
   try {
-    const { app } = PHASES[phase];
-    const res = await fetch(`${API}/apps/${app}/users/${USER_ID}/sessions/${sid}`);
+    const res = await fetch(`${API}/apps/${APP_NAME}/users/${USER_ID}/sessions/${sid}`);
     if (!res.ok) throw new Error(`${res.status}`);
     const data = await res.json();
 
@@ -657,7 +588,6 @@ async function resumeSession(sid, phase) {
       return;
     }
 
-    // Render each turn from history
     for (const event of events) {
       if (!event.content?.parts?.length) continue;
       const text = event.content.parts.map(p => p.text || '').join('').trim();
@@ -674,35 +604,8 @@ async function resumeSession(sid, phase) {
 }
 
 // ─────────────────────────────────────────────
-// Phase switching
+// New chat
 // ─────────────────────────────────────────────
-function rebuildSuggestions(phase) {
-  suggestionsEl.innerHTML = '';
-  PHASES[phase].suggestions.forEach(s => {
-    const chip = document.createElement('button');
-    chip.className = 'suggestion';
-    chip.textContent = s;
-    chip.onclick = () => sendMessage(s);
-    suggestionsEl.appendChild(chip);
-  });
-}
-
-function switchPhase(phase) {
-  currentPhase = phase;
-  document.querySelectorAll('.phase-tabs button').forEach(b => {
-    b.classList.toggle('active', +b.dataset.phase === phase);
-  });
-  const p = PHASES[phase];
-  phaseDesc.textContent = `${p.label} — ${p.desc}`;
-  welcomeText.textContent = p.desc;
-  rebuildSuggestions(phase);
-  startNewChat();
-}
-
-document.querySelectorAll('.phase-tabs button').forEach(btn => {
-  btn.addEventListener('click', () => switchPhase(+btn.dataset.phase));
-});
-
 document.getElementById('new-chat-btn').addEventListener('click', startNewChat);
 
 function startNewChat() {
@@ -712,6 +615,20 @@ function startNewChat() {
   welcome.style.display = 'flex';
   renderHistory();
   setStatus('ready', 'New session started');
+}
+
+// ─────────────────────────────────────────────
+// Suggestions
+// ─────────────────────────────────────────────
+function buildSuggestions() {
+  suggestionsEl.innerHTML = '';
+  SUGGESTIONS.forEach(s => {
+    const chip = document.createElement('button');
+    chip.className = 'suggestion';
+    chip.textContent = s;
+    chip.onclick = () => sendMessage(s);
+    suggestionsEl.appendChild(chip);
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -758,8 +675,7 @@ function removeTyping() { document.getElementById('typing-indicator')?.remove();
 // API calls
 // ─────────────────────────────────────────────
 async function ensureSession() {
-  const { app } = PHASES[currentPhase];
-  await fetch(`${API}/apps/${app}/users/${USER_ID}/sessions/${sessionId}`, {
+  await fetch(`${API}/apps/${APP_NAME}/users/${USER_ID}/sessions/${sessionId}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
   }).catch(() => {});
 }
@@ -770,35 +686,31 @@ async function sendMessage(text) {
   isWaiting = true;
   sendBtn.disabled = true;
 
-  const parts        = buildParts(text);
-  const displayText  = text.trim() || (pendingFiles.length ? `[${pendingFiles.length} file(s)]` : '');
-  const hasFiles     = pendingFiles.length > 0;
+  const parts       = buildParts(text);
+  const displayText = text.trim() || (pendingFiles.length ? `[${pendingFiles.length} file(s)]` : '');
+  const hasFiles    = pendingFiles.length > 0;
 
   inputEl.value = '';
   autoResize();
 
   const isFirst = !loadHistory().find(h => h.sessionId === sessionId);
 
-  // Show user bubble (with file previews if any)
   const userBubble = addMessage('user', displayText);
   if (hasFiles) addAttachmentsToBubble(userBubble);
 
-  // Clear attachments AFTER capturing them in parts
   clearAttachments();
-
   addTyping();
   setStatus('', 'Agent is thinking…');
 
-  if (isFirst) addToHistory(sessionId, currentPhase, displayText.slice(0, 60));
+  if (isFirst) addToHistory(sessionId, displayText.slice(0, 60));
 
   try {
     await ensureSession();
-    const { app } = PHASES[currentPhase];
     const res = await fetch(`${API}/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        appName: app, userId: USER_ID, sessionId,
+        appName: APP_NAME, userId: USER_ID, sessionId,
         newMessage: { role: 'user', parts },
       }),
     });
@@ -831,7 +743,7 @@ async function sendMessage(text) {
 
   } catch (err) {
     removeTyping();
-    addMessage('agent', `Could not reach the server.\n\nMake sure server.py is running:\n  python server.py --phase ${currentPhase}`, 'error');
+    addMessage('agent', `Could not reach the server.\n\nMake sure server.py is running:\n  python server.py`, 'error');
     setStatus('error', 'Cannot connect to server');
   } finally {
     isWaiting = false;
@@ -844,11 +756,10 @@ async function sendMessage(text) {
 // File attachments
 // ─────────────────────────────────────────────
 
-const attachBtn     = document.getElementById('attach-btn');
-const fileInput     = document.getElementById('file-input');
-const previewEl     = document.getElementById('attachment-preview');
+const attachBtn = document.getElementById('attach-btn');
+const fileInput = document.getElementById('file-input');
+const previewEl = document.getElementById('attachment-preview');
 
-// pending attachments: [{ name, mimeType, data (base64), objectUrl?, isText, textContent? }]
 let pendingFiles = [];
 
 const IMAGE_TYPES = ['image/png','image/jpeg','image/webp','image/gif','image/heic','image/heif'];
@@ -865,7 +776,6 @@ fileInput.addEventListener('change', async () => {
   renderPreviews();
 });
 
-// Drag-and-drop onto the input bar
 document.getElementById('input-bar').addEventListener('dragover', e => {
   e.preventDefault();
   e.currentTarget.style.outline = `2px dashed var(--accent)`;
@@ -894,11 +804,9 @@ async function processFile(file) {
   }
 
   if (isText) {
-    // Text files: read as plain text, send as a text part (works with all models)
     const textContent = await file.text();
     pendingFiles.push({ name: file.name, mimeType: file.type || 'text/plain', isText: true, textContent });
   } else {
-    // Images and PDFs: base64 encode → inlineData
     const base64 = await toBase64(file);
     const objectUrl = isImage ? URL.createObjectURL(file) : null;
     pendingFiles.push({ name: file.name, mimeType: file.type, isText: false, data: base64, objectUrl });
@@ -908,7 +816,7 @@ async function processFile(file) {
 function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result.split(',')[1]); // strip data: prefix
+    reader.onload  = () => resolve(reader.result.split(',')[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -945,22 +853,14 @@ function renderPreviews() {
 }
 
 function buildParts(text) {
-  // ADK /run uses camelCase: inlineData + mimeType
   const parts = [];
-
-  // Text files → prepend as quoted text block
   pendingFiles.filter(f => f.isText).forEach(f => {
     parts.push({ text: `[File: ${f.name}]\n\`\`\`\n${f.textContent}\n\`\`\`` });
   });
-
-  // User's own message text
   if (text.trim()) parts.push({ text });
-
-  // Images + PDFs → inlineData
   pendingFiles.filter(f => !f.isText).forEach(f => {
     parts.push({ inlineData: { mimeType: f.mimeType, data: f.data, displayName: f.name } });
   });
-
   return parts;
 }
 
@@ -970,7 +870,6 @@ function clearAttachments() {
   renderPreviews();
 }
 
-// Show attached files in the chat bubble
 function addAttachmentsToBubble(bubble) {
   pendingFiles.forEach(f => {
     if (f.objectUrl) {
@@ -1019,7 +918,7 @@ async function checkServer() {
   }
 }
 
-switchPhase(1);
+buildSuggestions();
 renderHistory();
 checkServer();
 </script>
