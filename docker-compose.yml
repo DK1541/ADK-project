@@ -1,51 +1,22 @@
 # ============================================================
-# docker-compose.yml — local multi-phase deployment
+# docker-compose.yml — ADK Assistant local deployment
 # ============================================================
-# Start all phases:  docker compose up
-# Start one phase:   docker compose up phase3
-# Stop:              docker compose down
+# Start:  docker compose up
+# Stop:   docker compose down
 #
-# Each phase gets its own container and port:
-#   Phase 1 (single agent)  → http://localhost:8001/docs
-#   Phase 2 (stateful)      → http://localhost:8002/docs
-#   Phase 3 (multi-agent)   → http://localhost:8003/docs
+# Chat UI  → http://localhost:8000/
+# API docs → http://localhost:8000/docs
 # ============================================================
 
 services:
 
-  phase1:
+  assistant:
     build: .
     ports:
-      - "8001:8000"
+      - "8000:8000"
     env_file:
       - .env
-    environment:
-      - PHASE=1
     volumes:
-      # Mount .env at runtime — don't bake secrets into the image
-      - ./sessions:/app/sessions
-    restart: unless-stopped
-
-  phase2:
-    build: .
-    ports:
-      - "8002:8000"
-    env_file:
-      - .env
-    environment:
-      - PHASE=2
-    volumes:
-      - ./sessions:/app/sessions
-    restart: unless-stopped
-
-  phase3:
-    build: .
-    ports:
-      - "8003:8000"
-    env_file:
-      - .env
-    environment:
-      - PHASE=3
-    volumes:
-      - ./sessions:/app/sessions
+      # Persist SQLite session DB across container restarts
+      - ./data:/app/data
     restart: unless-stopped

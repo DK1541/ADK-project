@@ -1,7 +1,8 @@
 """
-shared_tools.py — Common data and tools used across all phases
+shared_tools.py — Shared weather, time, and city data + tools
 ==============================================================
-Import from here instead of duplicating data in each phase.
+Single source of truth for all agent tools related to weather, time,
+and city information. Import from here to avoid duplication.
 """
 
 import datetime
