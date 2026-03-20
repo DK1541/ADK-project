@@ -77,7 +77,9 @@ def main():
     app = create_app(serve_ui=args.ui)
 
     print(f"\n{'='*55}")
-    print(f"  ADK Assistant — 6 Specialist Agents")
+    print(f"  ADK Assistant — 7 Specialist Agents")
+    print(f"  Specialists: weather/time, travel, math, language,")
+    print(f"               code, knowledge, media")
     print(f"  Provider  : {os.getenv('MODEL_PROVIDER', 'google')}")
     print(f"  Chat UI   : http://localhost:{args.port}/")
     print(f"  API docs  : http://localhost:{args.port}/docs")
