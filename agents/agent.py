@@ -12,6 +12,7 @@ Specialists:
   4. language       — translation, grammar, summarisation, writing assistance
   5. code           — write, explain, debug, review code in any language
   6. knowledge      — research, general knowledge, history, explanations
+  7. media          — image/video editing, slideshow creation, frame extraction
 
 Model assignment is fully driven by .env — see model_config.py.
 """
@@ -26,6 +27,11 @@ from google.adk.agents import Agent
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.tools import ToolContext
 from model_config import get_model
+from media_tools import (
+    get_image_info, edit_image, add_text_to_image,
+    photos_to_video, get_video_info, edit_video,
+    extract_video_frames, merge_videos,
+)
 from shared_tools import (
     WEATHER_DATA, CITY_TIMEZONES, SUPPORTED_CITIES_DISPLAY,
     get_weather, get_current_time,
@@ -65,6 +71,7 @@ LANGUAGE_MODEL = _model("OLLAMA_MODEL_LANGUAGE")
 CODE_MODEL     = _model("OLLAMA_MODEL_CODE")
 KNOWLEDGE_MODEL= _model("OLLAMA_MODEL_KNOWLEDGE")
 COORD_MODEL    = _model("OLLAMA_MODEL_COORDINATOR")
+MEDIA_MODEL    = _model("OLLAMA_MODEL_MEDIA")
 
 
 # ===========================================================================
@@ -517,22 +524,64 @@ knowledge_agent = Agent(
 
 
 # ===========================================================================
+# SPECIALIST 7 — MEDIA (images & videos)
+# ===========================================================================
+
+media_agent = Agent(
+    name="media_specialist",
+    model=MEDIA_MODEL,
+    description=(
+        "Expert in image and video processing. Handles: converting photos to video "
+        "slideshows, editing images (resize, crop, rotate, brightness, contrast, "
+        "grayscale, format conversion, text overlay), editing videos (trim, speed, "
+        "reverse, mute, merge), extracting frames from videos, and retrieving "
+        "technical metadata from image and video files."
+    ),
+    instruction=(
+        "You are the Media Specialist — precise and practical with images and videos.\n\n"
+        "Image tools:\n"
+        "  - get_image_info(image_path)         → dimensions, format, EXIF metadata\n"
+        "  - edit_image(image_path, ...)         → resize, crop, rotate, brightness,\n"
+        "                                          contrast, saturation, grayscale,\n"
+        "                                          flip, format conversion\n"
+        "  - add_text_to_image(image_path, text) → overlay a caption or watermark\n\n"
+        "Video tools:\n"
+        "  - photos_to_video(image_paths, ...)   → create slideshow video from images\n"
+        "  - get_video_info(video_path)           → duration, fps, resolution, codec\n"
+        "  - edit_video(video_path, ...)          → trim, speed, reverse, mute\n"
+        "  - extract_video_frames(video_path)     → save frames as images at intervals\n"
+        "  - merge_videos(video_paths, ...)       → concatenate multiple clips\n\n"
+        "Always ask for file paths if the user hasn't provided them.\n"
+        "Confirm output path with the user after each operation.\n"
+        "Supported input formats: JPEG, PNG, WEBP, TIFF, BMP, MP4, MOV, AVI, MKV."
+    ),
+    tools=[
+        get_image_info, edit_image, add_text_to_image,
+        photos_to_video, get_video_info, edit_video,
+        extract_video_frames, merge_videos,
+    ],
+)
+
+
+# ===========================================================================
 # COORDINATOR — root agent
 # ===========================================================================
 
 root_agent = Agent(
     name="assistant",
     model=COORD_MODEL,
-    description="A powerful general-purpose assistant backed by six specialist agents.",
+    description="A powerful general-purpose assistant backed by seven specialist agents.",
     instruction=(
-        "You are Assistant — a highly capable AI powered by six specialist agents.\n\n"
+        "You are Assistant — a highly capable AI powered by seven specialist agents.\n\n"
         "Your specialists:\n"
-        "  - weather_time_specialist  → weather, UV, world clock, time zones, differences\n"
-        "  - travel_specialist        → trip planning, packing, city info, best months\n"
-        "  - math_science_specialist  → calculations, unit conversions, science Q&A\n"
+        "  - weather_time_specialist     → weather, UV, world clock, time zones, differences\n"
+        "  - travel_specialist           → trip planning, packing, city info, best months\n"
+        "  - math_science_specialist     → calculations, unit conversions, science Q&A\n"
         "  - language_writing_specialist → translation, grammar, writing, summarisation\n"
-        "  - code_specialist          → code in any language, debugging, architecture\n"
-        "  - knowledge_specialist     → history, science facts, geography, research\n\n"
+        "  - code_specialist             → code in any language, debugging, architecture\n"
+        "  - knowledge_specialist        → history, science facts, geography, research\n"
+        "  - media_specialist            → edit images/videos, slideshow from photos,\n"
+        "                                  extract frames, merge clips, image metadata\n\n"
         "Routing rules:\n"
         "  - Route EACH part of a multi-domain question to the right specialist.\n"
         "  - For questions spanning multiple domains, call ALL relevant specialists\n"
@@ -549,5 +598,6 @@ root_agent = Agent(
         language_writing_agent,
         code_agent,
         knowledge_agent,
+        media_agent,
     ],
 )

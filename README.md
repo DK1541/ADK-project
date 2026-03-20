@@ -1,23 +1,23 @@
 # ADK Assistant — Multi-Agent System with Google's Agent Development Kit
 
-A production-style multi-agent assistant built with [Google's Agent Development Kit (ADK)](https://google.github.io/adk-docs/). One coordinator routes requests across six specialist agents, each focused on a different domain. Supports **Google Gemini**, **Anthropic Claude**, **Ollama (local)**, and **HuggingFace** as LLM backends — switchable via a single environment variable.
+A production-style multi-agent assistant built with [Google's Agent Development Kit (ADK)](https://google.github.io/adk-docs/). One coordinator routes requests across seven specialist agents, each focused on a different domain. Supports **Google Gemini**, **Anthropic Claude**, **Ollama (local)**, and **HuggingFace** as LLM backends — switchable via a single environment variable.
 
 ---
 
 ## Architecture
 
 ```
-                    ┌──────────────────────────────┐
-                    │       assistant              │
-                    │      (coordinator)           │
-                    └──────────────┬───────────────┘
-                                   │ delegates via sub_agents
-        ┌──────────┬───────────────┼──────────────┬──────────┬──────────────┐
-        ▼          ▼               ▼              ▼          ▼              ▼
-  ┌──────────┐ ┌────────┐ ┌──────────────┐ ┌──────────┐ ┌──────┐ ┌──────────────┐
-  │ weather  │ │ travel │ │ math/science │ │ language │ │ code │ │  knowledge   │
-  │  & time  │ │ advisor│ │  calculator  │ │ writing  │ │ agent│ │  & research  │
-  └──────────┘ └────────┘ └──────────────┘ └──────────┘ └──────┘ └──────────────┘
+                         ┌──────────────────────┐
+                         │      assistant       │
+                         │     (coordinator)    │
+                         └──────────┬───────────┘
+                                    │ delegates via sub_agents
+     ┌──────────┬──────────┬────────┼──────────┬──────────┬──────────┐
+     ▼          ▼          ▼        ▼          ▼          ▼          ▼
+┌─────────┐ ┌────────┐ ┌───────┐ ┌────────┐ ┌──────┐ ┌─────────┐ ┌───────┐
+│ weather │ │ travel │ │ math/ │ │  lang  │ │ code │ │knowledge│ │ media │
+│  & time │ │advisor │ │science│ │writing │ │      │ │research │ │editor │
+└─────────┘ └────────┘ └───────┘ └────────┘ └──────┘ └─────────┘ └───────┘
 ```
 
 **Specialists and their tools:**
@@ -30,6 +30,7 @@ A production-style multi-agent assistant built with [Google's Agent Development 
 | Language & Writing | Translation, grammar correction, tone rewriting, summarisation, creative writing, emails |
 | Code | Write, explain, debug, and review code in any language; SQL, regex, shell, architecture |
 | Knowledge | History, science, geography, culture, philosophy, how-things-work, research synthesis |
+| Media | Convert photos to video slideshows, edit images (resize/crop/rotate/brightness/text overlay), edit videos (trim/speed/reverse/merge), extract frames, read EXIF/video metadata |
 
 ---
 
@@ -39,12 +40,13 @@ A production-style multi-agent assistant built with [Google's Agent Development 
 ADK-project/
 ├── agents/
 │   ├── __init__.py            # Marks agents/ as a Python package
-│   ├── agent.py               # All 6 specialists + coordinator (root_agent)
+│   ├── agent.py               # All 7 specialists + coordinator (root_agent)
 │   └── assistant/
 │       ├── __init__.py        # Marks assistant/ as a Python package
 │       └── agent.py           # ADK loader entry point — re-exports root_agent
 │
 ├── shared_tools.py            # Weather/time data and shared tool functions
+├── media_tools.py             # Image & video processing tools (Pillow, moviepy, OpenCV)
 ├── model_config.py            # LLM provider switcher (Gemini / Claude / Ollama / HF)
 ├── server.py                  # FastAPI REST server + chat frontend mount
 ├── main.py                    # Interactive terminal chat loop
@@ -62,7 +64,10 @@ ADK-project/
 ### File descriptions
 
 **`agents/agent.py`**
-The heart of the system. Defines all six specialist `Agent` objects and the `root_agent` coordinator. Each specialist has its own model (configurable per-specialist via env vars), a focused `instruction` prompt, and a precise `description` the coordinator uses to route requests. Also contains the specialist-only tools: `get_weather_detailed`, `get_time_detailed`, `get_time_difference`, `get_travel_tips`, `get_packing_advice`, `calculate`, and `convert_units`.
+The heart of the system. Defines all seven specialist `Agent` objects and the `root_agent` coordinator. Each specialist has its own model (configurable per-specialist via env vars), a focused `instruction` prompt, and a precise `description` the coordinator uses to route requests. Contains all specialist tools including `get_weather_detailed`, `get_time_detailed`, `get_time_difference`, `get_travel_tips`, `get_packing_advice`, `calculate`, and `convert_units`.
+
+**`media_tools.py`**
+All image and video processing tools for the media specialist: `get_image_info` (EXIF, dimensions), `edit_image` (resize, crop, rotate, brightness, contrast, saturation, grayscale, flip, format conversion), `add_text_to_image` (captions/watermarks), `photos_to_video` (slideshow creator), `get_video_info` (duration, fps, resolution), `edit_video` (trim, speed, reverse, mute), `extract_video_frames` (save frames at intervals), `merge_videos` (concatenate clips). Requires Pillow, moviepy, and OpenCV.
 
 **`agents/assistant/agent.py`**
 A one-line re-export: `from agents.agent import root_agent`. This exists because ADK's loader requires the folder structure `<agents_dir>/<app_name>/agent.py`. The app name is `assistant`, so this file is the loader's entry point.
@@ -96,6 +101,9 @@ Direct dependencies only:
 - `uvicorn` — ASGI server
 - `python-dotenv` — `.env` file loader
 - `aiosqlite` — async SQLite driver for persistent sessions
+- `Pillow` — image reading, editing, and format conversion
+- `moviepy` — video creation, editing, and concatenation
+- `opencv-python` — video frame extraction and video metadata
 
 **`pyrightconfig.json`**
 Tells Pylance/Pyright to look in the project root when resolving imports (`extraPaths: ["."]`). This suppresses false-positive "module not found" errors for `shared_tools`, `model_config`, and the `google.adk.*` packages.
@@ -138,6 +146,7 @@ OLLAMA_MODEL=llama3.2
 # OLLAMA_MODEL_LANGUAGE=llama3.2
 # OLLAMA_MODEL_CODE=qwen2.5:14b
 # OLLAMA_MODEL_KNOWLEDGE=llama3.1
+# OLLAMA_MODEL_MEDIA=llama3.2
 # OLLAMA_MODEL_COORDINATOR=llama3.2
 
 # HuggingFace (Sambanova-routed models are best for tool use)
@@ -236,7 +245,7 @@ docker compose up
 
 | Concept | Where to see it |
 |---|---|
-| Functions as tools (docstring + type hints required) | `shared_tools.py`, `agents/agent.py` |
+| Functions as tools (docstring + type hints required) | `shared_tools.py`, `agents/agent.py`, `media_tools.py` |
 | `Agent(model=, instruction=, tools=)` | `agents/agent.py` — each specialist |
 | `sub_agents` delegation and routing | `agents/agent.py` — `root_agent` |
 | LiteLLM bridge (Claude / Ollama / HuggingFace) | `model_config.py` |
@@ -245,3 +254,4 @@ docker compose up
 | FastAPI REST server via `get_fast_api_app()` | `server.py` |
 | SQLite persistent sessions | `server.py` — `sqlite+aiosqlite:///sessions.db` |
 | Chat history + file upload frontend | `frontend/index.html` |
+| Image/video processing (Pillow, moviepy, OpenCV) | `media_tools.py` |
