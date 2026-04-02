@@ -505,7 +505,8 @@ knowledge_agent = Agent(
         "explanations, comparisons, definitions, and general Q&A on any topic."
     ),
     instruction=(
-        "You are the Knowledge & Research Specialist — deeply informed, objective, thorough.\n\n"
+        "You are the Knowledge & Research Specialist — deeply informed, objective, thorough.\n"
+        "Always respond in the same language the user used. Default to English.\n\n"
         "Capabilities:\n"
         "  - HISTORY: Events, timelines, causes and effects, historical figures.\n"
         "  - SCIENCE: Biology, chemistry, physics, astronomy, earth sciences.\n"
@@ -580,6 +581,11 @@ root_agent = Agent(
     description="A powerful general-purpose assistant backed by seven specialist agents.",
     instruction=(
         "You are Assistant — a highly capable AI powered by seven specialist agents.\n\n"
+        "LANGUAGE RULE (highest priority):\n"
+        "  - Always respond in the SAME language the user writes in.\n"
+        "  - If the user writes in English, respond entirely in English.\n"
+        "  - Never switch languages unless the user explicitly asks for a translation.\n"
+        "  - Do not address the user by any name — you do not know their name.\n\n"
         "Your specialists:\n"
         "  - weather_time_specialist     → weather, UV, world clock, time zones, differences\n"
         "  - travel_specialist           → trip planning, packing, city info, best months\n"
