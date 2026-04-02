@@ -30,7 +30,7 @@ A production-style multi-agent assistant built with [Google's Agent Development 
 | Language & Writing | Translation, grammar correction, tone rewriting, summarisation, creative writing, emails |
 | Code | Write, explain, debug, and review code in any language; SQL, regex, shell, architecture |
 | Knowledge | History, science, geography, culture, philosophy, how-things-work, research synthesis |
-| Media | Convert photos to video slideshows, edit images (resize/crop/rotate/brightness/text overlay), edit videos (trim/speed/reverse/merge), extract frames, read EXIF/video metadata |
+| Media | Convert photos to video slideshows, edit images (resize/crop/rotate/brightness/text overlay), edit videos (trim/speed/reverse/merge), extract frames, read EXIF/video metadata, **YOLOv8 object detection** (detect/label/count objects in images and videos) |
 
 ---
 
@@ -67,7 +67,7 @@ ADK-project/
 The heart of the system. Defines all seven specialist `Agent` objects and the `root_agent` coordinator. Each specialist has its own model (configurable per-specialist via env vars), a focused `instruction` prompt, and a precise `description` the coordinator uses to route requests. Contains all specialist tools including `get_weather_detailed`, `get_time_detailed`, `get_time_difference`, `get_travel_tips`, `get_packing_advice`, `calculate`, and `convert_units`.
 
 **`media_tools.py`**
-All image and video processing tools for the media specialist: `get_image_info` (EXIF, dimensions), `edit_image` (resize, crop, rotate, brightness, contrast, saturation, grayscale, flip, format conversion), `add_text_to_image` (captions/watermarks), `photos_to_video` (slideshow creator), `get_video_info` (duration, fps, resolution), `edit_video` (trim, speed, reverse, mute), `extract_video_frames` (save frames at intervals), `merge_videos` (concatenate clips). Requires Pillow, moviepy, and OpenCV.
+All image and video processing tools for the media specialist: `get_image_info` (EXIF, dimensions), `edit_image` (resize, crop, rotate, brightness, contrast, saturation, grayscale, flip, format conversion), `add_text_to_image` (captions/watermarks), `photos_to_video` (slideshow creator), `get_video_info` (duration, fps, resolution), `edit_video` (trim, speed, reverse, mute), `extract_video_frames` (save frames at intervals), `merge_videos` (concatenate clips). YOLOv8 tools: `detect_objects_in_image` (detect and label all objects with bounding boxes), `count_objects` (count all or specific object classes), `detect_objects_in_video` (run detection across video frames, save annotated output). Requires Pillow, moviepy, OpenCV, and Ultralytics.
 
 **`agents/assistant/agent.py`**
 A one-line re-export: `from agents.agent import root_agent`. This exists because ADK's loader requires the folder structure `<agents_dir>/<app_name>/agent.py`. The app name is `assistant`, so this file is the loader's entry point.
@@ -104,6 +104,7 @@ Direct dependencies only:
 - `Pillow` — image reading, editing, and format conversion
 - `moviepy` — video creation, editing, and concatenation
 - `opencv-python` — video frame extraction and video metadata
+- `ultralytics` — YOLOv8 object detection for images and videos
 
 **`pyrightconfig.json`**
 Tells Pylance/Pyright to look in the project root when resolving imports (`extraPaths: ["."]`). This suppresses false-positive "module not found" errors for `shared_tools`, `model_config`, and the `google.adk.*` packages.
@@ -255,3 +256,4 @@ docker compose up
 | SQLite persistent sessions | `server.py` — `sqlite+aiosqlite:///sessions.db` |
 | Chat history + file upload frontend | `frontend/index.html` |
 | Image/video processing (Pillow, moviepy, OpenCV) | `media_tools.py` |
+| YOLOv8 object detection (Ultralytics) | `media_tools.py` — `detect_objects_in_image`, `count_objects`, `detect_objects_in_video` |
