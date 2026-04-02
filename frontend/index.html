@@ -727,7 +727,6 @@ async function sendMessage(text) {
     }
 
     const events = await res.json();
-    console.log('[ADK] raw events:', JSON.stringify(events, null, 2));
     let reply = null;
     for (const event of events) {
       if (event?.content?.parts?.length) {

@@ -34,6 +34,112 @@ A production-style multi-agent assistant built with [Google's Agent Development 
 
 ---
 
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- **Python 3.11+** — check with `python --version`
+  - Download: https://www.python.org/downloads/
+- **Git** — to clone the repo
+- **One of the following LLM backends** (pick whichever fits you):
+
+| Provider | What you need |
+|---|---|
+| **Ollama** (local, free) | Install Ollama from https://ollama.com, then pull models (see below) |
+| **Google Gemini** | A free API key from https://aistudio.google.com/app/apikey |
+| **Anthropic Claude** | An API key from https://console.anthropic.com |
+| **HuggingFace** | A free token from https://huggingface.co/settings/tokens |
+
+### Ollama — pull models before first run
+
+If you're using Ollama, start the Ollama app, then pull the models you plan to use:
+
+```bash
+# Minimum — one model for everything
+ollama pull llama3.2
+
+# Recommended — best model per task (requires ~40 GB RAM total)
+ollama pull llama3.2          # weather, time
+ollama pull llama3.1          # time specialist
+ollama pull qwen2.5:14b       # coordinator, travel, math
+ollama pull qwen2.5-coder:14b # code specialist
+ollama pull phi4              # knowledge / research
+ollama pull minicpm-v         # media specialist (vision + tool calling)
+ollama pull aya-expanse:32b   # language / translation (20 GB — use aya:8b if RAM limited)
+```
+
+> **Tip:** If you have limited RAM, set every specialist to the same small model:
+> set `OLLAMA_MODEL=llama3.2` in `.env` and leave all per-specialist overrides commented out.
+
+---
+
+## Quickstart
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/DK1541/ADK-project.git
+cd ADK-project
+```
+
+### 2. Create a virtual environment
+
+```bash
+python -m venv .venv
+
+# macOS / Linux
+source .venv/bin/activate
+
+# Windows
+.venv\Scripts\activate
+```
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure your environment
+
+```bash
+cp .env.example .env
+```
+
+Then open `.env` and:
+- Set `MODEL_PROVIDER` to your chosen backend (`ollama`, `google`, `anthropic`, or `huggingface`)
+- Fill in the API key for that provider (or leave blank if using Ollama)
+- Optionally assign different models per specialist via `OLLAMA_MODEL_<SPECIALIST>`
+
+**Minimal `.env` for Ollama (local, no API key needed):**
+```env
+MODEL_PROVIDER=ollama
+OLLAMA_MODEL=llama3.2
+```
+
+**Minimal `.env` for Google Gemini:**
+```env
+MODEL_PROVIDER=google
+GOOGLE_API_KEY=your_key_here
+```
+
+**Minimal `.env` for Anthropic Claude:**
+```env
+MODEL_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-your_key_here
+ANTHROPIC_MODEL=claude-sonnet-4-6
+```
+
+### 5. Run
+
+```bash
+python server.py
+```
+
+Open **http://localhost:8000** — the chat UI loads in your browser.
+
+---
+
 ## Project Structure
 
 ```
@@ -57,6 +163,7 @@ ADK-project/
 ├── Dockerfile                 # Container image definition
 ├── docker-compose.yml         # Single-service Docker Compose config
 ├── requirements.txt           # Python dependencies with minimum version pins
+├── .python-version            # Specifies Python 3.11 (used by pyenv / mise)
 ├── pyrightconfig.json         # Pylance / Pyright config (suppresses false-positive import errors)
 └── .gitignore                 # Excludes .env, __pycache__, *.db, .venv
 ```
@@ -106,9 +213,6 @@ Direct dependencies only:
 - `opencv-python` — video frame extraction and video metadata
 - `ultralytics` — YOLOv8 object detection for images and videos
 
-**`pyrightconfig.json`**
-Tells Pylance/Pyright to look in the project root when resolving imports (`extraPaths: ["."]`). This suppresses false-positive "module not found" errors for `shared_tools`, `model_config`, and the `google.adk.*` packages.
-
 ---
 
 ## Supported Cities
@@ -117,58 +221,9 @@ New York · London · Tokyo · Mumbai · New Delhi · Chicago · Milwaukee
 
 ---
 
-## Setup
+## Other Ways to Run
 
-### 1. Clone and install
-```bash
-git clone https://github.com/DK1541/ADK-project.git
-cd ADK-project
-pip install -r requirements.txt
-```
-
-### 2. Configure your LLM provider
-
-Create a `.env` file:
-
-```bash
-# Choose one: anthropic | ollama | huggingface | google
-MODEL_PROVIDER=ollama
-
-# Anthropic / Claude
-ANTHROPIC_API_KEY=sk-ant-...
-ANTHROPIC_MODEL=claude-sonnet-4-6
-
-# Ollama — local, no API key needed (https://ollama.com)
-OLLAMA_MODEL=llama3.2
-# Optional: assign a different model to each specialist
-# OLLAMA_MODEL_WEATHER=qwen2.5:14b
-# OLLAMA_MODEL_TRAVEL=llama3.1
-# OLLAMA_MODEL_MATH=llama3.2
-# OLLAMA_MODEL_LANGUAGE=llama3.2
-# OLLAMA_MODEL_CODE=qwen2.5:14b
-# OLLAMA_MODEL_KNOWLEDGE=llama3.1
-# OLLAMA_MODEL_MEDIA=llama3.2
-# OLLAMA_MODEL_COORDINATOR=llama3.2
-
-# HuggingFace (Sambanova-routed models are best for tool use)
-# HF_TOKEN=hf_...
-# HF_MODEL=huggingface/sambanova/Qwen/Qwen2.5-72B-Instruct
-
-# Google Gemini
-# GOOGLE_API_KEY=...
-```
-
----
-
-## Running
-
-### Browser chat UI
-```bash
-python server.py
-```
-Open `http://localhost:8000` — full chat interface with history and file upload.
-
-### Terminal chat
+### Terminal chat (no browser needed)
 ```bash
 python main.py
 ```
@@ -239,6 +294,24 @@ docker compose up
 | Azure Container Apps | `az containerapp create` |
 
 > Vertex AI Agent Engine requires Gemini models. For Claude or Ollama, use the Docker path.
+
+---
+
+## Troubleshooting
+
+**Agent responds in the wrong language**
+The coordinator and all specialists are instructed to match the user's language. If a model keeps drifting (common with Qwen-based models), switch `OLLAMA_MODEL_COORDINATOR` to a more English-dominant model like `llama3.2` or `phi4`.
+
+**"Cannot reach server" in the chat UI**
+Make sure `server.py` is running (`python server.py`) and the browser is pointing at `http://localhost:8000`.
+
+**Ollama errors / empty responses**
+- Confirm Ollama is running: `ollama list`
+- Confirm the model you set in `.env` is pulled: `ollama pull <model-name>`
+- Check the terminal running `server.py` for Python tracebacks
+
+**`[No text response — check server logs]` in the UI**
+The agent pipeline ran but produced no text. Check the `server.py` terminal for model errors. Usually caused by a model that doesn't support tool calling (required by ADK) — try switching to `llama3.2` or `qwen2.5:14b`.
 
 ---
 
