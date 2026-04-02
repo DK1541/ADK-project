@@ -31,6 +31,7 @@ from media_tools import (
     get_image_info, edit_image, add_text_to_image,
     photos_to_video, get_video_info, edit_video,
     extract_video_frames, merge_videos,
+    detect_objects_in_image, count_objects, detect_objects_in_video,
 )
 from shared_tools import (
     WEATHER_DATA, CITY_TIMEZONES, SUPPORTED_CITIES_DISPLAY,
@@ -551,14 +552,20 @@ media_agent = Agent(
         "  - edit_video(video_path, ...)          → trim, speed, reverse, mute\n"
         "  - extract_video_frames(video_path)     → save frames as images at intervals\n"
         "  - merge_videos(video_paths, ...)       → concatenate multiple clips\n\n"
+        "Object detection tools (YOLOv8):\n"
+        "  - detect_objects_in_image(image_path) → detect + label all objects, save annotated image\n"
+        "  - count_objects(image_path, object_class) → count all or specific objects\n"
+        "  - detect_objects_in_video(video_path)  → detect objects across video frames\n\n"
         "Always ask for file paths if the user hasn't provided them.\n"
         "Confirm output path with the user after each operation.\n"
-        "Supported input formats: JPEG, PNG, WEBP, TIFF, BMP, MP4, MOV, AVI, MKV."
+        "Supported input formats: JPEG, PNG, WEBP, TIFF, BMP, MP4, MOV, AVI, MKV.\n"
+        "YOLOv8 model sizes: n=fastest, s=fast, m=balanced, l=accurate, x=most accurate."
     ),
     tools=[
         get_image_info, edit_image, add_text_to_image,
         photos_to_video, get_video_info, edit_video,
         extract_video_frames, merge_videos,
+        detect_objects_in_image, count_objects, detect_objects_in_video,
     ],
 )
 

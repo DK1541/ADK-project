@@ -1,8 +1,8 @@
 """
 media_tools.py — Image and video processing tools for the media specialist agent.
 
-Dependencies: Pillow, moviepy, opencv-python
-Install: pip install Pillow moviepy opencv-python
+Dependencies: Pillow, moviepy, opencv-python, ultralytics (YOLOv8)
+Install: pip install Pillow moviepy opencv-python ultralytics
 """
 
 import os
@@ -578,6 +578,220 @@ def merge_videos(
             "clip_count":     len(video_paths),
             "total_duration": f"{total_duration:.1f}s",
             "transition":     transition,
+        }
+    except Exception as e:
+        return {"status": "error", "error_message": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# YOLO OBJECT DETECTION TOOLS
+# ---------------------------------------------------------------------------
+
+def detect_objects_in_image(
+    image_path: str,
+    output_path: str = "",
+    model_size: str = "n",
+    confidence: float = 0.25,
+    save_annotated: bool = True,
+) -> dict:
+    """
+    Detects and labels all objects in an image using YOLOv8.
+    Returns a list of detected objects with labels, confidence scores,
+    and bounding box coordinates. Optionally saves an annotated image.
+
+    Use this when the user asks: 'what is in this image?', 'detect objects',
+    'identify things in this photo', or 'analyse this image'.
+
+    Args:
+        image_path:     Full path to the image file.
+        output_path:    Where to save the annotated image. Defaults to <name>_detected.<ext>.
+        model_size:     YOLOv8 model size — 'n' (nano/fastest), 's' (small), 'm' (medium),
+                        'l' (large), 'x' (xlarge/most accurate). Default 'n'.
+        confidence:     Minimum confidence threshold 0.0–1.0 (default 0.25).
+        save_annotated: If True, saves image with bounding boxes drawn on it.
+    """
+    err = _check_file(image_path)
+    if err:
+        return {"status": "error", "error_message": err}
+
+    try:
+        from ultralytics import YOLO
+
+        model = YOLO(f"yolov8{model_size}.pt")
+        results = model(image_path, conf=confidence, verbose=False)
+
+        detections = []
+        for result in results:
+            for box in result.boxes:
+                label = result.names[int(box.cls)]
+                conf  = round(float(box.conf), 3)
+                x1, y1, x2, y2 = [round(v) for v in box.xyxy[0].tolist()]
+                detections.append({
+                    "label":      label,
+                    "confidence": conf,
+                    "bbox":       {"x1": x1, "y1": y1, "x2": x2, "y2": y2},
+                    "width_px":   x2 - x1,
+                    "height_px":  y2 - y1,
+                })
+
+        # Sort by confidence descending
+        detections.sort(key=lambda d: d["confidence"], reverse=True)
+
+        # Count by label
+        counts: dict = {}
+        for d in detections:
+            counts[d["label"]] = counts.get(d["label"], 0) + 1
+
+        # Save annotated image
+        annotated_path = ""
+        if save_annotated and detections:
+            out = output_path or _output_path(image_path, "_detected", ".jpg")
+            annotated = results[0].plot()
+            import cv2
+            cv2.imwrite(out, annotated)
+            annotated_path = out
+
+        return {
+            "status":          "success",
+            "image_path":      image_path,
+            "model":           f"yolov8{model_size}",
+            "total_detected":  len(detections),
+            "object_counts":   counts,
+            "detections":      detections,
+            "annotated_image": annotated_path or "not saved",
+        }
+    except Exception as e:
+        return {"status": "error", "error_message": str(e)}
+
+
+def count_objects(
+    image_path: str,
+    object_class: str = "",
+    confidence: float = 0.25,
+    model_size: str = "n",
+) -> dict:
+    """
+    Counts objects in an image, optionally filtered to a specific class.
+    Use this when the user asks 'how many people are in this photo?',
+    'count the cars', or 'how many objects are there?'
+
+    Args:
+        image_path:    Full path to the image file.
+        object_class:  Specific object to count, e.g. 'person', 'car', 'dog'.
+                       Leave blank to count all detected objects.
+        confidence:    Minimum confidence threshold 0.0–1.0 (default 0.25).
+        model_size:    YOLOv8 model size — 'n', 's', 'm', 'l', 'x'. Default 'n'.
+    """
+    result = detect_objects_in_image(
+        image_path,
+        model_size=model_size,
+        confidence=confidence,
+        save_annotated=False,
+    )
+
+    if result["status"] != "success":
+        return result
+
+    counts = result["object_counts"]
+
+    if object_class:
+        cls = object_class.lower().strip()
+        matched = {k: v for k, v in counts.items() if cls in k.lower()}
+        count = sum(matched.values())
+        return {
+            "status":       "success",
+            "image_path":   image_path,
+            "object_class": object_class,
+            "count":        count,
+            "matched":      matched,
+            "message":      f"Found {count} '{object_class}' in the image." if count else f"No '{object_class}' detected.",
+        }
+
+    return {
+        "status":      "success",
+        "image_path":  image_path,
+        "total_count": result["total_detected"],
+        "by_class":    counts,
+    }
+
+
+def detect_objects_in_video(
+    video_path: str,
+    output_path: str = "",
+    model_size: str = "n",
+    confidence: float = 0.25,
+    frame_interval: int = 30,
+) -> dict:
+    """
+    Runs YOLOv8 object detection on a video, processing every Nth frame.
+    Saves an annotated video with bounding boxes drawn on each processed frame.
+    Returns a summary of all unique objects detected and their frequency.
+
+    Use this when the user asks to 'detect objects in a video', 'analyse this clip',
+    or 'what appears in this video?'
+
+    Args:
+        video_path:      Full path to the video file.
+        output_path:     Where to save the annotated video. Defaults to <name>_detected.mp4.
+        model_size:      YOLOv8 model size — 'n', 's', 'm', 'l', 'x'. Default 'n'.
+        confidence:      Minimum confidence threshold 0.0–1.0 (default 0.25).
+        frame_interval:  Process every Nth frame (default 30 = ~1 per second at 30fps).
+                         Lower = more thorough but slower.
+    """
+    err = _check_file(video_path)
+    if err:
+        return {"status": "error", "error_message": err}
+
+    try:
+        import cv2
+        from ultralytics import YOLO
+
+        model    = YOLO(f"yolov8{model_size}.pt")
+        cap      = cv2.VideoCapture(video_path)
+        fps      = cap.get(cv2.CAP_PROP_FPS)
+        width    = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height   = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        out_path = output_path or _output_path(video_path, "_detected", ".mp4")
+        fourcc   = cv2.VideoWriter_fourcc(*"mp4v")
+        writer   = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+
+        all_counts: dict = {}
+        frame_idx = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            if frame_idx % frame_interval == 0:
+                results = model(frame, conf=confidence, verbose=False)
+                annotated = results[0].plot()
+                writer.write(annotated)
+
+                for box in results[0].boxes:
+                    label = results[0].names[int(box.cls)]
+                    all_counts[label] = all_counts.get(label, 0) + 1
+            else:
+                writer.write(frame)
+
+            frame_idx += 1
+
+        cap.release()
+        writer.release()
+
+        duration_s = total_frames / fps if fps > 0 else 0
+
+        return {
+            "status":           "success",
+            "video_path":       video_path,
+            "output_path":      out_path,
+            "model":            f"yolov8{model_size}",
+            "frames_analysed":  frame_idx // frame_interval,
+            "duration":         f"{int(duration_s // 60)}m {int(duration_s % 60)}s",
+            "unique_objects":   list(all_counts.keys()),
+            "detection_counts": all_counts,
         }
     except Exception as e:
         return {"status": "error", "error_message": str(e)}
