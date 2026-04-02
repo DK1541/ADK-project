@@ -27,7 +27,7 @@ async def chat_loop(root_agent):
     provider = os.getenv("MODEL_PROVIDER", "google")
     print(f"\n{'='*55}")
     print(f"  ADK Assistant  |  Provider: {provider}")
-    print(f"  6 specialists: weather·travel·math·language·code·knowledge")
+    print(f"  7 specialists: weather·time·travel·math·language·code·knowledge·media")
     print(f"  Type 'exit' to quit.")
     print(f"{'='*55}\n")
 

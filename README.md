@@ -151,54 +151,58 @@ ADK-project/
 │       ├── __init__.py        # Marks assistant/ as a Python package
 │       └── agent.py           # ADK loader entry point — re-exports root_agent
 │
-├── shared_tools.py            # Weather/time data and shared tool functions
-├── media_tools.py             # Image & video processing tools (Pillow, moviepy, OpenCV)
-├── model_config.py            # LLM provider switcher (Gemini / Claude / Ollama / HF)
+├── shared_tools.py            # Weather/time/city data + shared tool functions (37 cities)
+├── media_tools.py             # Image & video processing tools (Pillow, moviepy, OpenCV, YOLOv8)
+├── model_config.py            # LLM provider switcher (Gemini / Claude / Ollama / HuggingFace)
 ├── server.py                  # FastAPI REST server + chat frontend mount
 ├── main.py                    # Interactive terminal chat loop
 │
 ├── frontend/
 │   └── index.html             # Dark-themed chat UI (history, file upload, drag-and-drop)
 │
-├── Dockerfile                 # Container image definition
-├── docker-compose.yml         # Single-service Docker Compose config
+├── Dockerfile                 # Container image — python:3.11-slim, runs server.py
+├── docker-compose.yml         # Single-service Compose config, port 8000
 ├── requirements.txt           # Python dependencies with minimum version pins
+├── .env.example               # Template for all environment variables
 ├── .python-version            # Specifies Python 3.11 (used by pyenv / mise)
-├── pyrightconfig.json         # Pylance / Pyright config (suppresses false-positive import errors)
-└── .gitignore                 # Excludes .env, __pycache__, *.db, .venv
+├── pyrightconfig.json         # Pylance / Pyright config for VS Code
+└── .gitignore                 # Excludes .env, __pycache__, *.db, .venv, postman/
 ```
 
 ### File descriptions
 
 **`agents/agent.py`**
-The heart of the system. Defines all seven specialist `Agent` objects and the `root_agent` coordinator. Each specialist has its own model (configurable per-specialist via env vars), a focused `instruction` prompt, and a precise `description` the coordinator uses to route requests. Contains all specialist tools including `get_weather_detailed`, `get_time_detailed`, `get_time_difference`, `get_travel_tips`, `get_packing_advice`, `calculate`, and `convert_units`.
-
-**`media_tools.py`**
-All image and video processing tools for the media specialist: `get_image_info` (EXIF, dimensions), `edit_image` (resize, crop, rotate, brightness, contrast, saturation, grayscale, flip, format conversion), `add_text_to_image` (captions/watermarks), `photos_to_video` (slideshow creator), `get_video_info` (duration, fps, resolution), `edit_video` (trim, speed, reverse, mute), `extract_video_frames` (save frames at intervals), `merge_videos` (concatenate clips). YOLOv8 tools: `detect_objects_in_image` (detect and label all objects with bounding boxes), `count_objects` (count all or specific object classes), `detect_objects_in_video` (run detection across video frames, save annotated output). Requires Pillow, moviepy, OpenCV, and Ultralytics.
+The heart of the system. Defines all seven specialist `Agent` objects and the `root_agent` coordinator. Each specialist has its own model (configurable per-specialist via env vars using the `_model(env_key)` helper), a focused `instruction` prompt, and a precise `description` the coordinator uses for routing. Specialist tools defined here: `get_weather_detailed`, `get_time_detailed`, `get_time_difference`, `get_travel_tips`, `get_packing_advice`, `calculate`, `convert_units`. Media tools are imported from `media_tools.py`, shared tools from `shared_tools.py`.
 
 **`agents/assistant/agent.py`**
-A one-line re-export: `from agents.agent import root_agent`. This exists because ADK's loader requires the folder structure `<agents_dir>/<app_name>/agent.py`. The app name is `assistant`, so this file is the loader's entry point.
+A one-line re-export: `from agents.agent import root_agent`. Required because ADK's loader expects the structure `<agents_dir>/<app_name>/agent.py`. The app name is `assistant`, so this file is the loader's entry point.
 
 **`shared_tools.py`**
-Single source of truth for all weather and city data (`WEATHER_DATA`, `CITY_TIMEZONES`, `CITY_INFO`) and the shared tool functions used by the weather/travel agents: `get_weather`, `get_current_time`, `get_all_times`, `get_all_weather`, `compare_weather`, `get_city_info`, `get_best_cities_for_month`.
+Single source of truth for all city data and shared tool functions. Contains `WEATHER_DATA`, `CITY_TIMEZONES`, and `CITY_INFO` for 37 cities across 9 regions (North America, South America, Europe, Africa, Middle East, South Asia, East Asia, Southeast Asia, Oceania). Exports tools used by multiple specialists: `get_weather`, `get_current_time`, `get_all_times`, `get_all_weather`, `compare_weather`, `get_city_info`, `get_best_cities_for_month`.
+
+**`media_tools.py`**
+All image and video processing tools for the media specialist. Image tools: `get_image_info` (EXIF, dimensions, format), `edit_image` (resize, crop, rotate, brightness, contrast, saturation, grayscale, flip, format conversion), `add_text_to_image` (captions/watermarks). Video tools: `photos_to_video` (slideshow creator), `get_video_info` (duration, fps, resolution, codec), `edit_video` (trim, speed, reverse, mute), `extract_video_frames` (save frames at intervals), `merge_videos` (concatenate clips). YOLOv8 tools: `detect_objects_in_image`, `count_objects`, `detect_objects_in_video`.
 
 **`model_config.py`**
-Reads `MODEL_PROVIDER` from `.env` and returns the correct model object for ADK. For Google Gemini it returns a plain model name string; for Claude, Ollama, and HuggingFace it returns a `LiteLlm(model=...)` wrapper. `agents/agent.py` also has a `_model(env_key)` helper that extends this with per-specialist model overrides.
+Reads `MODEL_PROVIDER` from `.env` and returns the correct model object for ADK. Google Gemini returns a plain model name string (`"gemini-2.0-flash"`); Claude, Ollama, and HuggingFace return a `LiteLlm(model=...)` wrapper. Validates that API keys are present and raises a clear `ValueError` with a signup link if they are missing. `agents/agent.py` extends this with a `_model(env_key)` helper for per-specialist model overrides.
 
 **`server.py`**
-Builds the FastAPI app using `get_fast_api_app()` from ADK, pointing it at the `agents/` directory and a SQLite session database (`sessions.db`). Mounts `frontend/index.html` at `/` so the chat UI is served directly from the same port. Accepts `--port`, `--host`, and `--ui` flags.
+Builds the FastAPI app using ADK's `get_fast_api_app()`, pointing it at the `agents/` directory with a SQLite session database (`sessions.db`) for persistence across restarts. Mounts `frontend/index.html` at `/` so the chat UI and API are served from the same port. Accepts `--port` (default 8000), `--host`, and `--ui` (enables ADK Dev UI at `/dev-ui`) flags.
 
 **`main.py`**
-A minimal terminal chat loop using `Runner` + `InMemorySessionService` from ADK. Imports `root_agent` from `agents.agent`, creates a single session, and streams responses to stdout. Useful for quick testing without starting the web server.
+Minimal terminal chat loop using ADK's `Runner` + `InMemorySessionService`. Imports `root_agent`, creates a single in-memory session, and prints streamed responses to stdout. Useful for quick testing without starting the web server. Sessions are not persisted between runs.
 
 **`frontend/index.html`**
-A self-contained single-page chat UI. Features: dark theme, collapsible sidebar with persistent chat history (localStorage + server session resume), suggestion chips, typing indicator, file and image upload (base64-encoded, sent as `inlineData` to the `/run` endpoint), and drag-and-drop support.
+Self-contained single-page chat UI with no build step required. Features: dark theme, collapsible sidebar with persistent chat history (localStorage + server session resume on click), suggestion chips, animated typing indicator, file and image upload (base64-encoded, sent as `inlineData` parts), and drag-and-drop onto the input bar.
 
 **`Dockerfile`**
-Builds a `python:3.11-slim` image, installs dependencies, copies the project, and runs `server.py`. All secrets are injected at runtime via `--env-file .env` — nothing sensitive is baked into the image.
+Builds a `python:3.11-slim` image. Installs dependencies in a separate layer (cached unless `requirements.txt` changes), copies source files, and runs `server.py`. Includes a Docker health check hitting `/list-apps`. All secrets injected at runtime via `--env-file .env` — nothing sensitive is baked in.
 
 **`docker-compose.yml`**
-Single-service Compose config that builds the image and maps port 8000. Mounts a `./data` volume so the SQLite session database survives container restarts.
+Single-service Compose config that builds the image and maps port 8000. Mounts a `./data` volume so the SQLite session database (`sessions.db`) survives container restarts. Set to `restart: unless-stopped`.
+
+**`.env.example`**
+Template showing every supported environment variable with comments. Copy to `.env` and fill in your values. Covers all four providers (Ollama, Google, Anthropic, HuggingFace) and all per-specialist model override keys.
 
 **`requirements.txt`**
 Direct dependencies only:
@@ -210,8 +214,11 @@ Direct dependencies only:
 - `aiosqlite` — async SQLite driver for persistent sessions
 - `Pillow` — image reading, editing, and format conversion
 - `moviepy` — video creation, editing, and concatenation
-- `opencv-python` — video frame extraction and video metadata
+- `opencv-python` — video frame extraction and metadata
 - `ultralytics` — YOLOv8 object detection for images and videos
+
+**`pyrightconfig.json`**
+Tells Pylance/Pyright (VS Code) to use Python 3.11, look in `.venv` for the interpreter, and add the project root to `extraPaths` so imports like `from shared_tools import ...` resolve without errors.
 
 ---
 
