@@ -13,41 +13,230 @@ from zoneinfo import ZoneInfo
 # ---------------------------------------------------------------------------
 
 WEATHER_DATA = {
-    "new york":  {"condition": "Sunny",        "temp_c": 25, "humidity": "45%", "uv_index": 6},
-    "london":    {"condition": "Cloudy",        "temp_c": 14, "humidity": "72%", "uv_index": 2},
-    "tokyo":     {"condition": "Partly Cloudy", "temp_c": 18, "humidity": "60%", "uv_index": 4},
-    "mumbai":    {"condition": "Hot & Humid",   "temp_c": 34, "humidity": "85%", "uv_index": 8},
-    "new delhi": {"condition": "Hazy",          "temp_c": 32, "humidity": "55%", "uv_index": 7},
-    "chicago":   {"condition": "Windy",         "temp_c": 10, "humidity": "58%", "uv_index": 3},
-    "milwaukee": {"condition": "Overcast",      "temp_c": 8,  "humidity": "63%", "uv_index": 2},
+    # North America
+    "new york":     {"condition": "Sunny",           "temp_c": 25, "humidity": "45%", "uv_index": 6},
+    "los angeles":  {"condition": "Sunny",            "temp_c": 24, "humidity": "45%", "uv_index": 7},
+    "chicago":      {"condition": "Windy",            "temp_c": 10, "humidity": "58%", "uv_index": 3},
+    "toronto":      {"condition": "Partly Cloudy",    "temp_c": 12, "humidity": "58%", "uv_index": 4},
+    "mexico city":  {"condition": "Mild & Cloudy",    "temp_c": 18, "humidity": "55%", "uv_index": 6},
+    "milwaukee":    {"condition": "Overcast",         "temp_c": 8,  "humidity": "63%", "uv_index": 2},
+    # South America
+    "sao paulo":    {"condition": "Partly Cloudy",    "temp_c": 22, "humidity": "75%", "uv_index": 6},
+    "buenos aires": {"condition": "Partly Cloudy",    "temp_c": 17, "humidity": "65%", "uv_index": 5},
+    # Europe
+    "london":       {"condition": "Cloudy",           "temp_c": 14, "humidity": "72%", "uv_index": 2},
+    "paris":        {"condition": "Partly Cloudy",    "temp_c": 16, "humidity": "65%", "uv_index": 3},
+    "berlin":       {"condition": "Overcast",         "temp_c": 13, "humidity": "70%", "uv_index": 2},
+    "rome":         {"condition": "Sunny",            "temp_c": 20, "humidity": "50%", "uv_index": 6},
+    "barcelona":    {"condition": "Sunny",            "temp_c": 21, "humidity": "55%", "uv_index": 7},
+    "amsterdam":    {"condition": "Overcast & Rainy", "temp_c": 12, "humidity": "78%", "uv_index": 2},
+    "vienna":       {"condition": "Partly Cloudy",    "temp_c": 14, "humidity": "62%", "uv_index": 3},
+    "zurich":       {"condition": "Overcast",         "temp_c": 12, "humidity": "67%", "uv_index": 2},
+    "stockholm":    {"condition": "Cold & Cloudy",    "temp_c": 8,  "humidity": "72%", "uv_index": 1},
+    "istanbul":     {"condition": "Mild & Cloudy",    "temp_c": 17, "humidity": "68%", "uv_index": 4},
+    "moscow":       {"condition": "Cold & Overcast",  "temp_c": 5,  "humidity": "75%", "uv_index": 1},
+    # Africa
+    "cairo":        {"condition": "Sunny & Dry",      "temp_c": 30, "humidity": "25%", "uv_index": 9},
+    "lagos":        {"condition": "Hot & Humid",      "temp_c": 29, "humidity": "80%", "uv_index": 7},
+    "nairobi":      {"condition": "Mild & Cloudy",    "temp_c": 21, "humidity": "65%", "uv_index": 6},
+    "johannesburg": {"condition": "Mild & Clear",     "temp_c": 20, "humidity": "42%", "uv_index": 6},
+    # Middle East
+    "dubai":        {"condition": "Sunny & Hot",      "temp_c": 38, "humidity": "40%", "uv_index": 9},
+    # South Asia
+    "mumbai":       {"condition": "Hot & Humid",      "temp_c": 34, "humidity": "85%", "uv_index": 8},
+    "new delhi":    {"condition": "Hazy",             "temp_c": 32, "humidity": "55%", "uv_index": 7},
+    # East Asia
+    "tokyo":        {"condition": "Partly Cloudy",    "temp_c": 18, "humidity": "60%", "uv_index": 4},
+    "beijing":      {"condition": "Hazy",             "temp_c": 20, "humidity": "50%", "uv_index": 5},
+    "shanghai":     {"condition": "Partly Cloudy",    "temp_c": 18, "humidity": "65%", "uv_index": 4},
+    "seoul":        {"condition": "Clear",            "temp_c": 16, "humidity": "52%", "uv_index": 5},
+    "hong kong":    {"condition": "Sunny",            "temp_c": 23, "humidity": "70%", "uv_index": 6},
+    # Southeast Asia
+    "bangkok":      {"condition": "Hot & Humid",      "temp_c": 33, "humidity": "80%", "uv_index": 8},
+    "singapore":    {"condition": "Humid & Showery",  "temp_c": 30, "humidity": "85%", "uv_index": 7},
+    "kuala lumpur": {"condition": "Thundery",         "temp_c": 28, "humidity": "82%", "uv_index": 6},
+    "jakarta":      {"condition": "Hot & Humid",      "temp_c": 30, "humidity": "83%", "uv_index": 7},
+    "manila":       {"condition": "Hot & Humid",      "temp_c": 32, "humidity": "78%", "uv_index": 8},
+    # Oceania
+    "sydney":       {"condition": "Sunny",            "temp_c": 22, "humidity": "55%", "uv_index": 5},
 }
 
 CITY_TIMEZONES = {
-    "new york":  "America/New_York",
-    "london":    "Europe/London",
-    "tokyo":     "Asia/Tokyo",
-    "mumbai":    "Asia/Kolkata",
-    "new delhi": "Asia/Kolkata",
-    "chicago":   "America/Chicago",
-    "milwaukee": "America/Chicago",
+    # North America
+    "new york":     "America/New_York",
+    "los angeles":  "America/Los_Angeles",
+    "chicago":      "America/Chicago",
+    "toronto":      "America/Toronto",
+    "mexico city":  "America/Mexico_City",
+    "milwaukee":    "America/Chicago",
+    # South America
+    "sao paulo":    "America/Sao_Paulo",
+    "buenos aires": "America/Argentina/Buenos_Aires",
+    # Europe
+    "london":       "Europe/London",
+    "paris":        "Europe/Paris",
+    "berlin":       "Europe/Berlin",
+    "rome":         "Europe/Rome",
+    "barcelona":    "Europe/Madrid",
+    "amsterdam":    "Europe/Amsterdam",
+    "vienna":       "Europe/Vienna",
+    "zurich":       "Europe/Zurich",
+    "stockholm":    "Europe/Stockholm",
+    "istanbul":     "Europe/Istanbul",
+    "moscow":       "Europe/Moscow",
+    # Africa
+    "cairo":        "Africa/Cairo",
+    "lagos":        "Africa/Lagos",
+    "nairobi":      "Africa/Nairobi",
+    "johannesburg": "Africa/Johannesburg",
+    # Middle East
+    "dubai":        "Asia/Dubai",
+    # South Asia
+    "mumbai":       "Asia/Kolkata",
+    "new delhi":    "Asia/Kolkata",
+    # East Asia
+    "tokyo":        "Asia/Tokyo",
+    "beijing":      "Asia/Shanghai",
+    "shanghai":     "Asia/Shanghai",
+    "seoul":        "Asia/Seoul",
+    "hong kong":    "Asia/Hong_Kong",
+    # Southeast Asia
+    "bangkok":      "Asia/Bangkok",
+    "singapore":    "Asia/Singapore",
+    "kuala lumpur": "Asia/Kuala_Lumpur",
+    "jakarta":      "Asia/Jakarta",
+    "manila":       "Asia/Manila",
+    # Oceania
+    "sydney":       "Australia/Sydney",
 }
 
 CITY_INFO = {
+    # North America
     "new york": {
         "country": "USA", "currency": "USD ($)", "language": "English",
         "population": "8.3 million", "dial_code": "+1",
         "best_months": ["April", "May", "June", "September", "October", "November"],
     },
+    "los angeles": {
+        "country": "USA", "currency": "USD ($)", "language": "English",
+        "population": "3.9 million", "dial_code": "+1",
+        "best_months": ["March", "April", "May", "September", "October", "November"],
+    },
+    "chicago": {
+        "country": "USA", "currency": "USD ($)", "language": "English",
+        "population": "2.7 million", "dial_code": "+1",
+        "best_months": ["June", "July", "August", "September"],
+    },
+    "toronto": {
+        "country": "Canada", "currency": "CAD ($)", "language": "English / French",
+        "population": "2.9 million", "dial_code": "+1",
+        "best_months": ["June", "July", "August", "September"],
+    },
+    "mexico city": {
+        "country": "Mexico", "currency": "MXN ($)", "language": "Spanish",
+        "population": "9.2 million", "dial_code": "+52",
+        "best_months": ["March", "April", "May", "October", "November"],
+    },
+    "milwaukee": {
+        "country": "USA", "currency": "USD ($)", "language": "English",
+        "population": "577,000", "dial_code": "+1",
+        "best_months": ["June", "July", "August"],
+    },
+    # South America
+    "sao paulo": {
+        "country": "Brazil", "currency": "BRL (R$)", "language": "Portuguese",
+        "population": "22 million", "dial_code": "+55",
+        "best_months": ["April", "May", "June", "July", "August"],
+    },
+    "buenos aires": {
+        "country": "Argentina", "currency": "ARS ($)", "language": "Spanish",
+        "population": "3.1 million", "dial_code": "+54",
+        "best_months": ["September", "October", "November", "March", "April"],
+    },
+    # Europe
     "london": {
         "country": "UK", "currency": "GBP (£)", "language": "English",
         "population": "9 million", "dial_code": "+44",
         "best_months": ["June", "July", "August", "September"],
     },
-    "tokyo": {
-        "country": "Japan", "currency": "JPY (¥)", "language": "Japanese",
-        "population": "14 million", "dial_code": "+81",
-        "best_months": ["March", "April", "October", "November"],
+    "paris": {
+        "country": "France", "currency": "EUR (€)", "language": "French",
+        "population": "2.1 million", "dial_code": "+33",
+        "best_months": ["April", "May", "June", "September", "October"],
     },
+    "berlin": {
+        "country": "Germany", "currency": "EUR (€)", "language": "German",
+        "population": "3.7 million", "dial_code": "+49",
+        "best_months": ["June", "July", "August", "September"],
+    },
+    "rome": {
+        "country": "Italy", "currency": "EUR (€)", "language": "Italian",
+        "population": "2.8 million", "dial_code": "+39",
+        "best_months": ["April", "May", "June", "September", "October"],
+    },
+    "barcelona": {
+        "country": "Spain", "currency": "EUR (€)", "language": "Spanish / Catalan",
+        "population": "1.6 million", "dial_code": "+34",
+        "best_months": ["May", "June", "September", "October"],
+    },
+    "amsterdam": {
+        "country": "Netherlands", "currency": "EUR (€)", "language": "Dutch",
+        "population": "873,000", "dial_code": "+31",
+        "best_months": ["April", "May", "June", "July", "August"],
+    },
+    "vienna": {
+        "country": "Austria", "currency": "EUR (€)", "language": "German",
+        "population": "1.9 million", "dial_code": "+43",
+        "best_months": ["April", "May", "June", "September", "October"],
+    },
+    "zurich": {
+        "country": "Switzerland", "currency": "CHF (Fr)", "language": "German",
+        "population": "434,000", "dial_code": "+41",
+        "best_months": ["June", "July", "August", "September"],
+    },
+    "stockholm": {
+        "country": "Sweden", "currency": "SEK (kr)", "language": "Swedish",
+        "population": "975,000", "dial_code": "+46",
+        "best_months": ["June", "July", "August"],
+    },
+    "istanbul": {
+        "country": "Turkey", "currency": "TRY (₺)", "language": "Turkish",
+        "population": "15.5 million", "dial_code": "+90",
+        "best_months": ["April", "May", "September", "October"],
+    },
+    "moscow": {
+        "country": "Russia", "currency": "RUB (₽)", "language": "Russian",
+        "population": "12.5 million", "dial_code": "+7",
+        "best_months": ["June", "July", "August"],
+    },
+    # Africa
+    "cairo": {
+        "country": "Egypt", "currency": "EGP (£)", "language": "Arabic",
+        "population": "21 million", "dial_code": "+20",
+        "best_months": ["October", "November", "December", "February", "March"],
+    },
+    "lagos": {
+        "country": "Nigeria", "currency": "NGN (₦)", "language": "English",
+        "population": "15 million", "dial_code": "+234",
+        "best_months": ["November", "December", "January"],
+    },
+    "nairobi": {
+        "country": "Kenya", "currency": "KES (KSh)", "language": "Swahili / English",
+        "population": "4.9 million", "dial_code": "+254",
+        "best_months": ["June", "July", "August", "January", "February"],
+    },
+    "johannesburg": {
+        "country": "South Africa", "currency": "ZAR (R)", "language": "Zulu / Xhosa / Afrikaans / English",
+        "population": "5.8 million", "dial_code": "+27",
+        "best_months": ["May", "June", "July", "August", "September"],
+    },
+    # Middle East
+    "dubai": {
+        "country": "UAE", "currency": "AED (د.إ)", "language": "Arabic",
+        "population": "3.5 million", "dial_code": "+971",
+        "best_months": ["November", "December", "January", "February", "March"],
+    },
+    # South Asia
     "mumbai": {
         "country": "India", "currency": "INR (₹)", "language": "Hindi / Marathi",
         "population": "21 million", "dial_code": "+91",
@@ -58,15 +247,63 @@ CITY_INFO = {
         "population": "33 million", "dial_code": "+91",
         "best_months": ["October", "November", "December", "February", "March"],
     },
-    "chicago": {
-        "country": "USA", "currency": "USD ($)", "language": "English",
-        "population": "2.7 million", "dial_code": "+1",
+    # East Asia
+    "tokyo": {
+        "country": "Japan", "currency": "JPY (¥)", "language": "Japanese",
+        "population": "14 million", "dial_code": "+81",
+        "best_months": ["March", "April", "October", "November"],
+    },
+    "beijing": {
+        "country": "China", "currency": "CNY (¥)", "language": "Mandarin",
+        "population": "21.9 million", "dial_code": "+86",
+        "best_months": ["April", "May", "September", "October"],
+    },
+    "shanghai": {
+        "country": "China", "currency": "CNY (¥)", "language": "Mandarin",
+        "population": "24.9 million", "dial_code": "+86",
+        "best_months": ["April", "May", "October", "November"],
+    },
+    "seoul": {
+        "country": "South Korea", "currency": "KRW (₩)", "language": "Korean",
+        "population": "9.7 million", "dial_code": "+82",
+        "best_months": ["April", "May", "September", "October"],
+    },
+    "hong kong": {
+        "country": "China (SAR)", "currency": "HKD ($)", "language": "Cantonese / English",
+        "population": "7.5 million", "dial_code": "+852",
+        "best_months": ["October", "November", "December", "March", "April"],
+    },
+    # Southeast Asia
+    "bangkok": {
+        "country": "Thailand", "currency": "THB (฿)", "language": "Thai",
+        "population": "10.5 million", "dial_code": "+66",
+        "best_months": ["November", "December", "January", "February"],
+    },
+    "singapore": {
+        "country": "Singapore", "currency": "SGD ($)", "language": "English / Malay / Mandarin / Tamil",
+        "population": "5.9 million", "dial_code": "+65",
+        "best_months": ["February", "March", "July", "August"],
+    },
+    "kuala lumpur": {
+        "country": "Malaysia", "currency": "MYR (RM)", "language": "Malay / English / Mandarin",
+        "population": "1.8 million", "dial_code": "+60",
+        "best_months": ["May", "June", "July", "August"],
+    },
+    "jakarta": {
+        "country": "Indonesia", "currency": "IDR (Rp)", "language": "Indonesian",
+        "population": "10.6 million", "dial_code": "+62",
         "best_months": ["June", "July", "August", "September"],
     },
-    "milwaukee": {
-        "country": "USA", "currency": "USD ($)", "language": "English",
-        "population": "577,000", "dial_code": "+1",
-        "best_months": ["June", "July", "August"],
+    "manila": {
+        "country": "Philippines", "currency": "PHP (₱)", "language": "Filipino / English",
+        "population": "1.8 million", "dial_code": "+63",
+        "best_months": ["November", "December", "January", "February", "March"],
+    },
+    # Oceania
+    "sydney": {
+        "country": "Australia", "currency": "AUD ($)", "language": "English",
+        "population": "5.3 million", "dial_code": "+61",
+        "best_months": ["September", "October", "November", "March", "April"],
     },
 }
 

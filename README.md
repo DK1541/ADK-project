@@ -217,7 +217,23 @@ Direct dependencies only:
 
 ## Supported Cities
 
-New York · London · Tokyo · Mumbai · New Delhi · Chicago · Milwaukee
+**North America:** New York · Los Angeles · Chicago · Toronto · Mexico City · Milwaukee
+
+**South America:** São Paulo · Buenos Aires
+
+**Europe:** London · Paris · Berlin · Rome · Barcelona · Amsterdam · Vienna · Zurich · Stockholm · Istanbul · Moscow
+
+**Africa:** Cairo · Lagos · Nairobi · Johannesburg
+
+**Middle East:** Dubai
+
+**South Asia:** Mumbai · New Delhi
+
+**East Asia:** Tokyo · Beijing · Shanghai · Seoul · Hong Kong
+
+**Southeast Asia:** Bangkok · Singapore · Kuala Lumpur · Jakarta · Manila
+
+**Oceania:** Sydney
 
 ---
 
