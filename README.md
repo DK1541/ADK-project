@@ -64,12 +64,19 @@ ollama pull llama3.1          # time specialist
 ollama pull qwen2.5:14b       # coordinator, travel, math
 ollama pull qwen2.5-coder:14b # code specialist
 ollama pull phi4              # knowledge / research
-ollama pull minicpm-v         # media specialist (vision + tool calling)
-ollama pull aya-expanse:32b   # language / translation (20 GB — use aya:8b if RAM limited)
+ollama pull minicpm-v         # media specialist (vision + tool calling) — code default
+ollama pull aya:8b            # language / translation (23+ languages) — code default
+ollama pull aya-expanse:32b   # language upgrade — best translation quality (20 GB, optional)
+ollama pull llava:13b         # media upgrade — better image understanding (optional)
 ```
 
-> **Tip:** If you have limited RAM, set every specialist to the same small model:
-> set `OLLAMA_MODEL=llama3.2` in `.env` and leave all per-specialist overrides commented out.
+> **Smart defaults:** Even without per-specialist env vars, the language agent automatically
+> uses `aya:8b` (not the generic fallback) and the media agent uses `minicpm-v`.
+> Set `OLLAMA_MODEL_LANGUAGE` or `OLLAMA_MODEL_MEDIA` in `.env` to override.
+
+> **Tip:** If you have very limited RAM, set every specialist to the same small model:
+> set `OLLAMA_MODEL=llama3.2` in `.env` and remove all per-specialist overrides.
+> Note: translation quality will drop significantly with `llama3.2`.
 
 ---
 

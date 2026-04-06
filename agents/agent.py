@@ -56,10 +56,14 @@ _provider = os.getenv("MODEL_PROVIDER", "google").lower()
 _hf_default = os.getenv("HF_MODEL", "huggingface/sambanova/Qwen/Qwen2.5-72B-Instruct")
 _ol_default = os.getenv("OLLAMA_MODEL", "llama3.2")
 
-def _model(env_key: str):
-    """Picks the right model object for a specialist, driven by env vars."""
+def _model(env_key: str, ollama_default: str = ""):
+    """Picks the right model object for a specialist, driven by env vars.
+
+    ollama_default: used when OLLAMA_MODEL_<SPECIALIST> is not set in .env.
+    Falls back to OLLAMA_MODEL (the global default) if ollama_default is also empty.
+    """
     if _provider == "ollama":
-        return _ollama(os.getenv(env_key, _ol_default))
+        return _ollama(os.getenv(env_key, ollama_default or _ol_default))
     if _provider == "huggingface":
         return _hf(os.getenv(env_key.replace("OLLAMA_MODEL_", "HF_MODEL_"), _hf_default))
     return get_model()
@@ -68,11 +72,15 @@ WEATHER_MODEL  = _model("OLLAMA_MODEL_WEATHER")
 TIME_MODEL     = _model("OLLAMA_MODEL_TIME")
 TRAVEL_MODEL   = _model("OLLAMA_MODEL_TRAVEL")
 MATH_MODEL     = _model("OLLAMA_MODEL_MATH")
-LANGUAGE_MODEL = _model("OLLAMA_MODEL_LANGUAGE")
+# aya:8b supports 23+ languages with tool calling; overridable via OLLAMA_MODEL_LANGUAGE
+# Set OLLAMA_MODEL_LANGUAGE=aya-expanse:32b in .env for best translation quality
+LANGUAGE_MODEL = _model("OLLAMA_MODEL_LANGUAGE", "aya:8b")
 CODE_MODEL     = _model("OLLAMA_MODEL_CODE")
 KNOWLEDGE_MODEL= _model("OLLAMA_MODEL_KNOWLEDGE")
 COORD_MODEL    = _model("OLLAMA_MODEL_COORDINATOR")
-MEDIA_MODEL    = _model("OLLAMA_MODEL_MEDIA")
+# minicpm-v is a vision model — it can see uploaded images AND call tools
+# overridable via OLLAMA_MODEL_MEDIA (e.g. llava:13b for higher quality)
+MEDIA_MODEL    = _model("OLLAMA_MODEL_MEDIA", "minicpm-v")
 
 
 # ===========================================================================
